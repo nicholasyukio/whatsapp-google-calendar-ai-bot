@@ -92,6 +92,7 @@ class Bot:
             "extract_action_input_for_schedule": ["default", "time_handling", "extract_action_schedule"],
             "extract_action_input_for_list": ["default", "time_handling", "extract_action_list"],
             "extract_action_input_for_other": ["default", "time_handling", "extract_action_other"],
+            "extract_action_input_for_new_info": ["default", "time_handling", "extract_action_new_info"],
             "generate_missing_info_request": ["default", "generate_missing_info_request_base", "time_handling", "tone_adjustment"],
             "generate_confirmation_response_for_list": ["default", "generate_confirmation_response_for_list", "time_handling", "tone_adjustment"],
             "generate_confirmation_response_for_other": ["default", "generate_confirmation_response_for_other", "time_handling", "tone_adjustment"],
@@ -179,9 +180,18 @@ class Bot:
         elif state["user_intent"] == "list":
             expected_fields = ["start_time", "end_time"]
             profile = "extract_action_input_for_list"
-        elif state["user_intent"] in ["cancel", "update"]:
+        elif state["user_intent"] == "cancel":
             expected_fields = ["event_id", "start_time", "end_time"]
             profile = "extract_action_input_for_other"
+        elif state["user_intent"] == "update":
+            if state["action_input"]["is_update"]:
+                # in this case, extract action input for new values to update
+                expected_fields = []
+                profile = "extract_action_input_for_new_info"
+            else:
+                # in this case, extract action input for listing the possible events to update
+                expected_fields = ["event_id", "start_time", "end_time"]
+                profile = "extract_action_input_for_other"
         else:
             return full_fields
         parsed = self.completion(state, profile=profile, is_json=True)
@@ -623,45 +633,53 @@ class Bot:
         return result
 
     def update_meeting(self, state, action_input: ActionInput) -> str:
-        event_name = action_input.get("event_name")
-        updated_event = None
+        event_id = action_input.get("event_id", None)
+        event_name = action_input.get("event_name", "")
+        start_time = action_input.get("start_time", "")
+        end_time = action_input.get("end_time", "")
+        description = action_input.get("description", "")
+        location = action_input.get("location", "")
+        attendees_emails = action_input.get("invited_people", )
+        is_update = action_input.get("is_update", False)
+
         success = False
         info = ""
-        event_id = action_input.get("event_id")
-        is_update = action_input.get("is_update", False)
 
         if event_id:
             if is_update:
-                pass
+                    gresult = google_calendar.update_event(
+                    event_id=event_id,
+                    title=event_name,
+                    start_time=start_time,
+                    end_time=end_time,
+                    description=description,
+                    location=location,
+                    attendees_emails=attendees_emails
+                    )
+                    if gresult:
+                        success = True
+                        info = f"""The meeting '{event_name}' has been updated successfully. New details: Start: {start_time}, End: {end_time}, 
+                        Participants: {', '.join(attendees_emails)}"""
+                    else:
+                        info = f"Failed to update the meeting '{event_name}' in Google Calendar."
             else:
-                pass
+                state["action_input"] = {
+                    **state["action_input"],
+                    "event_name": "",
+                    "start_time": "",
+                    "end_time": "",
+                    "description": "",
+                    "invited_people": [],
+                    "location": "",
+                    "is_update": True
+                }
+                success = False
+                info = """[INFO] (Update pending) The event the user wants to update was identified, but the user needs to clearly confirm 
+                what they want to change"""
         else:
-            pass
-
-    ### STOPPED HERE AT 28/04/25 00:09
-
-    ## Ideas: must handle a form of having both current and updating data
-    # IDENTIFY ID > CLEAR NEW FIELDS IN ACTION INPUT > EXTRACT NEW INFO with parameter to tell to search for new info (state)
-
-        if updated_event and event_id:
-            # Update the event in Google Calendar using the event ID
-            gresult = google_calendar.update_event(
-                event_id=event_id,
-                title=updated_event["event_name"],
-                start_time=updated_event["start_time"],
-                end_time=updated_event["end_time"],
-                description=updated_event["description"],
-                location=updated_event["location"],
-                attendees_emails=updated_event["invited_people"]
-            )
-
-            if gresult:
-                success = True
-                info = f"The meeting '{event_name}' has been updated successfully. New details: Start: {updated_event['start_time']}, End: {updated_event['end_time']}, Participants: {', '.join(updated_event['invited_people'])}"
-            else:
-                info = f"Failed to update the meeting '{event_name}' in Google Calendar."
-        else:
-            info = f"No meeting found with the name '{event_name}' to update."
+            meetings_list = self.list_meetings(state, state["action_input"], include_past=False)
+            success = False
+            info = "[INFO] (Update pending) Meetings the user can update:\n" + meetings_list["info"]
 
         # Return the result
         result = {
@@ -693,7 +711,60 @@ class Bot:
         graph = self.state_graph.compile()
         return graph
     
-        # Method to handle the conversation
+    def get_conversation_state(self, phone_number: str) -> BotState:
+        """Get the existing state for a conversation from DynamoDB or create a new one."""
+        # Load existing state from DynamoDB
+        existing_state = database.load_state(phone_number)
+        
+        if existing_state:
+            # Check if context is expired (default 1440 minutes / 1 day)
+            if database.is_context_expired(existing_state["updated_at_utc"]):
+                # If expired, create new state
+                return self.create_new_state(phone_number)
+            return existing_state
+        
+        # If no existing state, create new one
+        return self.create_new_state(phone_number)
+    
+    def create_new_state(self, phone_number: str) -> BotState:
+        """Create a new state for a conversation."""
+        new_state = {
+            "input_msg": "",
+            "context": [],
+            "is_boss": False,
+            "greeted": False,
+            "user_id": phone_number,  # Use phone number as user_id
+            "user_email": "",
+            "username": "",
+            "user_intent": "none",
+            "chosen_action": "greet",
+            "action_input": {},
+            "action_result": {},
+            "response": "",
+            "updated_at_utc": datetime.now().isoformat()
+        }
+        # Save the new state to DynamoDB
+        database.save_state(phone_number, new_state)
+        return new_state
+        
+    def process_webhook_message(self, phone_number: str, message_text: str) -> str:
+        # Get existing state or create new one from DynamoDB
+        self.state = self.get_conversation_state(phone_number)
+        
+        # Update the state with new message
+        self.state["input_msg"] = message_text
+        self.state["updated_at_utc"] = datetime.now().isoformat()
+        
+        # Build and run the graph
+        self.build_graph()
+        final_state = self.state_graph.invoke(self.state)
+        
+        # Save the updated state to DynamoDB
+        database.save_state(phone_number, final_state)
+        
+        return final_state["response"]
+    
+    # Method to handle the conversation
     def run(self):
         
         user_id = "teste"

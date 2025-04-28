@@ -137,6 +137,26 @@ Return a JSON object with this format:
 Only include what's explicitly stated or implied. Do NOT include any other fields or text.
 """
 
+extract_action_new_info = """
+[TASK] 
+Now you have to extract structured new action input data from a conversation, that is, 
+new values that the user wants to use to update old values of an existing meeting.
+For example, if the user says that the meeting is scheduled for today, but wants to postpone to 
+tomorrow at the same start and end time, you must fill the start_time and end_time fields with 
+data relative to tomorrow, not today.
+Return a JSON object with this format:
+{
+  "event_name": "<name of the event>",
+  "start_time": "<start time in ISO 8601 or 'unknown'>",
+  "end_time": "<end time in ISO 8601 or 'unknown'>",
+  "description": "<short description or 'unknown'>",
+  "invited_people": ["<emails of invited people>"],
+  "location": "<location or 'online'>"
+}
+Only include information that is explicitly stated or clearly implied. Use "unknown"
+or empty list if unsure. Do NOT include any other fields or explanations.
+"""
+
 generate_missing_info_request_base = """
 [TASK] 
 1. Identify which required fields are missing.
@@ -164,8 +184,7 @@ Based on the intent, check what is missing. The required information for each in
     - event_name (string)
 
 - "update":
-    - event_name (string)
-    - at least one of the following must be present: start_time, end_time, description, invited_people, meet_link
+    - at least one of the following must be present: event_name (string), start_time (string), end_time (string), description (string), invited_people (list of emails)
 
 Keep your message natural and conversational.
 """

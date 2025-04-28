@@ -12,3 +12,4 @@ google-auth-httplib2==0.2.0
 google-api-python-client==2.118.0
 numpy==1.26.4
 scikit-learn==1.4.1.post1
+zappa==0.56.0

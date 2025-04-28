@@ -74,9 +74,9 @@ def load_state(user_id: str) -> dict:
         return state
     return None
 
-def is_context_expired(updated_at_str: str, threshold_minutes: int = 60) -> bool:
+def is_context_expired(updated_at_str: str, threshold_minutes: int = 1440) -> bool:
     """
-    Check if a context is older than a threshold (default 60 minutes).
+    Check if a context is older than a threshold (default 1440 minutes: 24 hours).
     """
     updated_at = datetime.datetime.fromisoformat(updated_at_str)
     now = datetime.datetime.utcnow()
