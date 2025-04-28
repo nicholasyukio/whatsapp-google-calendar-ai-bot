@@ -4,9 +4,9 @@ import json
 from django.http import HttpResponse, JsonResponse
 from django.db import connection
 from django.views.decorators.csrf import csrf_exempt
-from bot.lang.langchain_utils import *
+from bot.trash.langchain_utils import *
 from bot.whatsapp.whatsapp_api import *
-from bot.lang.langgraph_utils import create_workflow, BotState
+from bot.trash.langgraph_utils import create_workflow, BotState
 
 # Set up logging
 logger = logging.getLogger(__name__)

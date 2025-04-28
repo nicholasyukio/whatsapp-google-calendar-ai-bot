@@ -13,7 +13,7 @@ import datetime
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from bot.whatsapp.whatsapp_api import send_message
-from bot.calendar.calendar_service import CalendarService
+#from bot.calendar.calendar_service import CalendarService
 
 # Load environment variables
 load_dotenv()

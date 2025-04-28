@@ -2,7 +2,7 @@ from typing import Dict, Any
 from datetime import datetime
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import HumanMessage, SystemMessage
-from bot.lang.my_types import (
+from bot.trash.my_types import (
     BotState, ActionResult, ThinkingResult, model, MAX_ITERATIONS, 
     safe_parse_json, create_initial_state
 )

@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from datetime import datetime, timedelta
 import bot.calendar.calendar_utils as calendar_utils
-from bot.lang.my_types import BotState, ActionResponse, model, create_action_prompt, safe_parse_json
+from bot.trash.my_types import BotState, ActionResponse, model, create_action_prompt, safe_parse_json
 from langchain.prompts import ChatPromptTemplate
 import logging
 

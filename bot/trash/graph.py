@@ -1,8 +1,8 @@
 from typing import Dict, Any
 from langchain_core.runnables import RunnableConfig
 from langchain.graphs import StateGraph
-from bot.lang.my_types import BotState, create_initial_state
-from bot.lang.nodes import (
+from bot.trash.my_types import BotState, create_initial_state
+from bot.trash.nodes import (
     thinking_node,
     check_availability_node,
     create_event_node,

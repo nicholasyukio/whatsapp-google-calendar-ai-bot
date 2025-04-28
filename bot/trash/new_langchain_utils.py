@@ -1,7 +1,8 @@
 from openai import OpenAI
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import json
+from typing import List
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,6 +11,13 @@ now = datetime.now().isoformat()
 time_context = f"The current date and time is: {now}"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+def get_embedding(text: str, model: str = "text-embedding-ada-002") -> List[float]:
+    response = client.embeddings.create(
+        input=text,
+        model=model
+    )
+    return response.data[0].embedding
 
 def greet_user(user_input: str, username: str, is_boss: bool):
     if is_boss:
@@ -20,8 +28,6 @@ def greet_user(user_input: str, username: str, is_boss: bool):
         End the greeting with a polite follow up question about something you might help him with.
 
         Your boss name is '{username}'.
-
-        {time_context}.
 
         The greeting and your follow up question must match your boss message '{user_input}'
         """
@@ -35,8 +41,6 @@ def greet_user(user_input: str, username: str, is_boss: bool):
 
         The name of the user is '{username}'.
 
-        {time_context}.
-
         The greeting and your follow up question must match the user message '{user_input}'
         """
     response = client.chat.completions.create(
@@ -44,11 +48,14 @@ def greet_user(user_input: str, username: str, is_boss: bool):
         temperature=0.7,
         messages=[
             {"role": "system", "content": system_prompt},
+            {"role": "system", "content": time_context},
             {"role": "user", "content": user_input}
         ]
     )
     content = response.choices[0].message.content.strip()
     return content
+
+####
 
 def follow_up(user_input: str, username: str, is_boss: bool):
     if is_boss:
@@ -61,8 +68,6 @@ def follow_up(user_input: str, username: str, is_boss: bool):
         respectful goodbye message and say that you are at their service whenever they need you about their agenda.
 
         Your boss name is '{username}'.
-
-        {time_context}.
 
         The last message sent by your boss is '{user_input}'.
         """
@@ -78,8 +83,6 @@ def follow_up(user_input: str, username: str, is_boss: bool):
 
         The user name is '{username}'.
 
-        {time_context}.
-
         The last message sent by the user is '{user_input}'.
         """
     response = client.chat.completions.create(
@@ -87,11 +90,14 @@ def follow_up(user_input: str, username: str, is_boss: bool):
         temperature=0.7,
         messages=[
             {"role": "system", "content": system_prompt},
+            {"role": "system", "content": time_context},
             {"role": "user", "content": user_input}
         ]
     )
     content = response.choices[0].message.content.strip()
     return content
+
+####
 
 def identify_user(user_input: str):
     system_prompt = """
@@ -107,6 +113,7 @@ def identify_user(user_input: str):
     temperature=0,
     messages=[
         {"role": "system", "content": system_prompt},
+        {"role": "system", "content": time_context},
         {"role": "user", "content": user_input}
     ])
 
@@ -118,6 +125,8 @@ def identify_user(user_input: str):
         parsed = {}
     username = parsed.get("username", "unknown")
     return {"username": username}
+
+####
 
 def identify_intent(user_input: str):
     system_prompt = """
@@ -135,6 +144,7 @@ def identify_intent(user_input: str):
     temperature=0,
     messages=[
         {"role": "system", "content": system_prompt},
+        {"role": "system", "content": time_context},
         {"role": "user", "content": user_input}
     ])
 
@@ -147,22 +157,22 @@ def identify_intent(user_input: str):
     intent = parsed.get("intent", "unknown")
     return {"intent": intent}
 
-def extract_action_input(user_input: str, context: list[str], user_intent: str):
+####
+
+def extract_action_input(user_input: str, context: list[dict], user_intent: str):
     full_fields = {
         "event_name": "",
         "start_time": "",
         "end_time": "",
         "description": "",
         "invited_people": [],
-        "meet_link": ""
+        "location": ""
     }
 
     if user_intent == "schedule":
-        expected_fields = ["event_name", "start_time", "end_time", "description", "invited_people", "meet_link"]
+        expected_fields = ["event_name", "start_time", "end_time", "description", "invited_people", "location"]
         system_prompt = """
 You are an assistant that extracts structured action input data from a conversation.
-
-{time_context}.
 
 Return a JSON object with this format:
 {
@@ -170,8 +180,8 @@ Return a JSON object with this format:
   "start_time": "<start time in ISO 8601 or 'unknown'>",
   "end_time": "<end time in ISO 8601 or 'unknown'>",
   "description": "<short description or 'unknown'>",
-  "invited_people": ["<names or emails>"],
-  "meet_link": "<link or 'unknown'>"
+  "invited_people": ["<emails of invited people>"],
+  "location": "<location or 'online'>"
 }
 
 Only include information that is explicitly stated or clearly implied. Use "unknown" or empty list if unsure. Do NOT include any other fields or explanations.
@@ -180,15 +190,22 @@ Only include information that is explicitly stated or clearly implied. Use "unkn
     elif user_intent == "list":
         expected_fields = ["start_time", "end_time"]
         system_prompt = """
-You are an assistant that extracts time range information to list scheduled meetings.
+You are an assistant that helps an user know about their scheduled meetings.
 
-{time_context}.
+Your task is only to identify if the user specified any start and end time constraints, not start and end times of particular scheduled meetings.
+
+For example, if the user says that they want to know about their meetings in the next 7 days, the start time should be today and now, 
+and the end time should be the date and time 7 days later.
+
+If you need to determine start and end time constraints based on relative words such as today, tomorrow, next Monday, etc, use the information below:
 
 Return a JSON object with this format:
 {
   "start_time": "<start range in ISO 8601 or 'unknown'>",
   "end_time": "<end range in ISO 8601 or 'unknown'>"
 }
+
+If the user did not specify any time range, complete the JSON object with 'unknown' values.
 
 Only include what's explicitly stated or implied. Do NOT include any other fields or text.
 """
@@ -197,8 +214,6 @@ Only include what's explicitly stated or implied. Do NOT include any other field
         expected_fields = ["event_name"]
         system_prompt = f"""
 You are an assistant that extracts the name of an event to {user_intent}.
-
-{time_context}.
 
 Return a JSON object with this format:
 {{
@@ -212,7 +227,8 @@ Only include this field. Do NOT include any other fields or text.
         return full_fields
 
     # Monta o histórico para envio ao modelo
-    history = [{"role": "system", "content": system_prompt}]
+    history = [{"role": "system", "content": system_prompt},
+               {"role": "system", "content": time_context}]
     for msg in context:
         history.append({"role": "user", "content": msg})
     history.append({"role": "user", "content": user_input})
@@ -234,16 +250,24 @@ Only include this field. Do NOT include any other fields or text.
     result = full_fields.copy()
     for field in expected_fields:
         result[field] = parsed.get(field, full_fields[field])
+    if user_intent == "list":
+        std_start_datetime = datetime.now()
+        std_start_datetime_iso = std_start_datetime.isoformat()
+        std_end_datetime = std_start_datetime + timedelta(days=7)
+        std_end_datetime_iso = std_end_datetime.isoformat()
+
+        if result["start_time"] == "unknown": result["start_time"] = std_start_datetime_iso
+        if result["end_time"] == "unknown": result["end_time"] = std_end_datetime_iso
 
     return result
+
+####
 
 def generate_missing_info_request(user_input: str, intent: str, action_input: dict) -> str:
     system_prompt = f"""
 You are a smart assistant helping a user manage their calendar.
 
 The user wants to: '{intent}'.
-
-{time_context}.
 
 Below is the extracted data:
 {json.dumps(action_input, indent=2)}
@@ -286,6 +310,7 @@ Keep your message natural and conversational.
         temperature=0.7,
         messages=[
             {"role": "system", "content": system_prompt},
+            {"role": "system", "content": time_context},
             {"role": "user", "content": user_input}
         ]
     )
@@ -293,60 +318,62 @@ Keep your message natural and conversational.
     content = response.choices[0].message.content.strip()
     return content
 
-def generate_confirmation_response(user_input: str, intent: str, action_input: dict, action_result: str) -> str:
-    if intent == "list":
-        system_prompt = f"""
-    You are a smart assistant helping your boss manage their calendar, who wants to know all the current meetings they have.
+####
 
-    {time_context}.
+def generate_confirmation_response(user_input: str, intent: str, action_input: dict, action_result: dict) -> str:
+    success = action_result["success"]
+    info = action_result["info"]
+    if success:
+        if intent == "list":
+            system_prompt = f"""
+        You are a smart assistant helping your boss manage their calendar, who wants to know all the current meetings they have.
 
-    The list of meeting your boss has scheduled is: '{action_result}'.
+        The list of meeting your boss has scheduled is: '{info}'.
 
-    Your task:
-    1. Generate a short response listing all the meetings your boss has and asking if they want information about one of them or to modify one of them.
-    2. Ensure that the time is in the "hh:mm of dd/mm/yy" format.
-    """
+        Your task:
+        1. Generate a short response listing all the meetings your boss has and asking if they want information about one of them or to modify one of them.
+        2. Ensure that the time is in the "hh:mm of dd/mm/yy" format.
+        """
+        else:
+            system_prompt = f"""
+        You are a smart assistant helping a user manage their calendar.
+
+        The user requested to: '{intent}', which was done with success.
+
+        Below is the extracted data:
+        {json.dumps(action_input, indent=2)}
+
+        Based on the intent, generate a confirmation response in natural language. The response should include:
+        - A clear confirmation of the user's intent (e.g., "Your meeting has been scheduled," "Your meeting has been updated," or "Your meeting has been cancelled").
+        - All the relevant details of the meeting in natural language, including the event name, start time, end time, description, invited people, and meeting link (if applicable).
+        - If the meeting times are provided, convert them to the format: "hh:mm of dd/mm/yy" (e.g., "15:30 of 25/04/2025").
+        - If any optional fields are missing, do not include them in the response.
+
+        Here is the information you have:
+        {info}
+
+        Your task:
+        1. Generate a short confirmation response that acknowledges the user's intent and provides all the meeting details in a natural conversational format.
+        2. Ensure that the time is in the "hh:mm of dd/mm/yy" format.
+        """
     else:
         system_prompt = f"""
-    You are a smart assistant helping a user manage their calendar.
-
-    {time_context}.
-
-    The user wants to: '{intent}'.
-
-    Below is the extracted data:
-    {json.dumps(action_input, indent=2)}
-
-    Based on the intent, generate a confirmation response in natural language. The response should include:
-    - A clear confirmation of the user's intent (e.g., "Your meeting has been scheduled," "Your meeting has been updated," or "Your meeting has been cancelled").
-    - All the relevant details of the meeting in natural language, including the event name, start time, end time, description, invited people, and meeting link (if applicable).
-    - If the meeting times are provided, convert them to the format: "hh:mm of dd/mm/yy" (e.g., "15:30 of 25/04/2025").
-    - If any optional fields are missing, do not include them in the response.
-
-    Here is the information you have:
-    1. Event Name: {action_input.get("event_name", "Unknown event name")}
-    2. Start Time: {action_input.get("start_time", "Unknown time")}
-    3. End Time: {action_input.get("end_time", "Unknown time")}
-    4. Description: {action_input.get("description", "No description provided")}
-    5. Invited People: {', '.join(action_input.get("invited_people", [])) if action_input.get("invited_people") else "No one invited"}
-    6. Meeting Link: {action_input.get("meet_link", "No meeting link provided")}
-
-    Your task:
-    1. Generate a short confirmation response that acknowledges the user’s intent and provides all the meeting details in a natural conversational format.
-    2. Ensure that the time is in the "hh:mm of dd/mm/yy" format.
-    """
+        Generate a short message explaining to the user that the action the user requested {intent} was not possible because of {info}.
+        """
 
     response = client.chat.completions.create(
         model="gpt-4",
         temperature=0.7,
         messages=[
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_input}
+            {"role": "system", "content": time_context}
         ]
     )
 
     content = response.choices[0].message.content.strip()
     return content
+
+####
 
 def format_datetime(datetime_str: str) -> str:
     try:

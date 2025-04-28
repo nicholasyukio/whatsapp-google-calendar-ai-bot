@@ -8,7 +8,7 @@ from bot.calendar.calendar_actions import (
     cancel_event_node,
     list_events_node
 )
-from bot.lang.my_types import BotState, ActionResponse, model, create_action_prompt, safe_parse_json, VALID_ACTIONS, find_most_similar_action
+from bot.trash.my_types import BotState, ActionResponse, model, create_action_prompt, safe_parse_json, VALID_ACTIONS, find_most_similar_action
 import json
 from datetime import datetime, timedelta
 from google.oauth2.credentials import Credentials
