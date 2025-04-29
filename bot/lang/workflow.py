@@ -343,9 +343,6 @@ class Bot:
             state["user_intent"] = "none"
             state["action_input"]["is_update"] = False
         else:
-            if intent == "update":
-                if result["confirm_update"]:
-                    state["action_input"]["is_update"] = True
             info_to_context = {"role": "assistant", "content": f"[INFO] Action {intent} was NOT SUCCESSFUL, details: {result.get('info', 'No details available')}"}
         state["context"].append(info_to_context)
         state["action_result"] = result
@@ -649,7 +646,6 @@ class Bot:
         is_update = action_input.get("is_update", False)
 
         success = False
-        confirm_update = False
         info = ""
 
         if event_id:
@@ -696,7 +692,6 @@ class Bot:
                 success = False
                 info = """[INFO] (Update pending) The event the user wants to update was identified, but the user needs to clearly confirm 
                 what they want to change"""
-                confirm_update = True
         else:
             meetings_list = self.list_meetings(state, state["action_input"], include_past=False)
             success = False
@@ -705,7 +700,6 @@ class Bot:
         # Return the result
         result = {
             "success": success,
-            "confirm_update": confirm_update,
             "info": info
         }
         return result
