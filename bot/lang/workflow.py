@@ -136,7 +136,7 @@ class Bot:
         # Add chat context (user/assistant messages from state)
         messages.extend(state["context"])
         response = self.client.chat.completions.create(
-            model="gpt-4",  # or gpt-3.5-turbo
+            model="gpt-4.1-nano",
             messages=messages,
             temperature=0.7,
             **kwargs
