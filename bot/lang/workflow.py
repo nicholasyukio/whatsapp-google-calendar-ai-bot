@@ -674,16 +674,7 @@ class Bot:
                 else:
                     info = f"Failed to update the meeting '{event_name}' in Google Calendar."
             else:
-                self.state["action_input"] = {
-                    **self.state["action_input"],
-                    "event_name": "",
-                    "start_time": "",
-                    "end_time": "",
-                    "description": "",
-                    "invited_people": [],
-                    "location": "",
-                    "is_update": True 
-                }
+                self.state["action_input"]["is_update"] = True
                 success = False
                 info = """[INFO] (Update pending) The event the user wants to update was identified, but the user needs to clearly confirm 
                 what they want to change"""
