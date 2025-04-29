@@ -194,7 +194,7 @@ class Bot:
             if state["action_input"]["is_update"]:
                 # in this case, extract action input for new values to update
                 expected_fields = []
-                profile = "extract_action_input_for_new_info"
+                profile = "extract_action_input_for_new_info" # Fix here
             else:
                 # in this case, extract action input for listing the possible events to update
                 expected_fields = ["event_id", "start_time", "end_time"]
@@ -339,6 +339,7 @@ class Bot:
             result = state["action_result"]
         if result["success"]:
             info_to_context = {"role": "assistant", "content": f"[INFO] Action {intent} was SUCCESSFUL, details: {result.get('info', 'No details available')}"}
+            state["user_intent"] = "none"
         else:
             info_to_context = {"role": "assistant", "content": f"[INFO] Action {intent} was NOT SUCCESSFUL, details: {result.get('info', 'No details available')}"}
         state["context"].append(info_to_context)
@@ -595,7 +596,7 @@ class Bot:
             "content": f"[INFO] Here are the events found: \n{event_info_str}"
         }
 
-        state["context"].append(info_to_context) 
+        self.state["context"].append(info_to_context) 
         
         return event_data_list
 
@@ -611,7 +612,6 @@ class Bot:
 
         event_id = action_input.get("event_id")
         if event_id:
-            ### STOPPED HERE 28/04/25 00:29
             success = google_calendar.cancel_event(event_id)
             # It seems success is not returning the real status
             if success:
@@ -648,23 +648,33 @@ class Bot:
 
         if event_id:
             if is_update:
-                    gresult = google_calendar.update_event(
+                # Build a dictionary of the fields to update only if they are not blank.
+                update_params = {}
+                if event_name:
+                    update_params["title"] = event_name
+                if start_time:
+                    update_params["start_time"] = start_time
+                if end_time:
+                    update_params["end_time"] = end_time
+                if description:
+                    update_params["description"] = description
+                if location:
+                    update_params["location"] = location
+                if attendees_emails:
+                    update_params["attendees_emails"] = attendees_emails
+
+                gresult = google_calendar.update_event(
                     event_id=event_id,
-                    title=event_name,
-                    start_time=start_time,
-                    end_time=end_time,
-                    description=description,
-                    location=location,
-                    attendees_emails=attendees_emails
+                    **update_params
                     )
-                    if gresult:
-                        success = True
-                        info = f"""The meeting '{event_name}' has been updated successfully. New details: Start: {start_time}, End: {end_time}, 
-                        Participants: {', '.join(attendees_emails)}"""
-                    else:
-                        info = f"Failed to update the meeting '{event_name}' in Google Calendar."
+                success = (gresult["status"] == "confirmed")
+                if success:
+                    info = f"""The meeting '{event_name}' has been updated successfully. New details: Start: {start_time}, End: {end_time}, 
+                    Participants: {', '.join(attendees_emails)}"""
+                else:
+                    info = f"Failed to update the meeting '{event_name}' in Google Calendar."
             else:
-                state["action_input"] = {
+                self.state["action_input"] = {
                     **state["action_input"],
                     "event_name": "",
                     "start_time": "",
@@ -672,7 +682,7 @@ class Bot:
                     "description": "",
                     "invited_people": [],
                     "location": "",
-                    "is_update": True
+                    "is_update": True 
                 }
                 success = False
                 info = """[INFO] (Update pending) The event the user wants to update was identified, but the user needs to clearly confirm 
@@ -782,8 +792,6 @@ class Bot:
     def run(self):
         
         user_id = "teste"
-        #current_context: List[ChatMessage] = []
-        # save the entire state??
         result = database.load_state(user_id)
 
         if not result:

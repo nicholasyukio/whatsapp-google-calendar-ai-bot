@@ -4,3 +4,7 @@
 11. Deploy using Zappa, GitHub Actions and AWS Lambda
 12. Create using AI simple React website explaining the project, based on README.md created by AI 
 13. Build simple AI agent to batch test the bot and find potential issues
+
+
+- Fix update (after user confirmation)
+- Other people user email collection
