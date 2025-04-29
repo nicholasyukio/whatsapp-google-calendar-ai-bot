@@ -1,9 +1,7 @@
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, List, Literal
 from datetime import datetime, timedelta, time
-import math
 import bot.lang.google_calendar as google_calendar
-import numpy as np
 import bot.lang.prompts as prompts
 import json
 from openai import OpenAI
