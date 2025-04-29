@@ -16,6 +16,7 @@ if is_local:
 
 BOSS_NAME = os.getenv("BOSS_NAME")
 BOSS_ID = os.getenv("BOSS_ID")
+BOSS_EMAIL = os.getenv("BOSS_EMAIL")
 
 class ChatMessage(TypedDict):
     role: Literal["system", "user", "assistant"]
@@ -135,7 +136,11 @@ class Bot:
                 messages.append({"role": "system", "content": system_prompt})
 
         # Add chat context (user/assistant messages from state)
-        messages.extend(state["context"])
+        if profile == "identify_intent":
+            # in this case, use only the last message
+            messages.append(state["context"][-1])
+        else:
+            messages.extend(state["context"])
         response = self.client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=messages,
@@ -241,14 +246,20 @@ class Bot:
         if state["user_id"] == BOSS_ID:
             state["is_boss"] = True
             state["username"] = BOSS_NAME
+            state["user_email"] = BOSS_EMAIL
         else:
             state["is_boss"] = False
             username_result = self.identify_user(state)
             try:
                 state["username"] = username_result["username"]
+                if "@" in username_result["user_email"] and "." in username_result["user_email"].split("@")[-1]:
+                    state["user_email"] = username_result["user_email"]
+                else:
+                    state["user_email"] = ""
             except Exception as e:
                 print(f"Unexpected error with JSON: {e}")
                 state["username"] = ""
+                state["user_email"] = ""
         return state
 
     def n_identify_intent(self, state):
@@ -272,6 +283,7 @@ class Bot:
                     return all([
                         not is_falsy(action_input.get("event_name")),
                         not is_falsy(action_input.get("start_time")),
+                        not is_falsy(state.get("user_email")),
                         not is_falsy(action_input.get("end_time")),
                         not is_falsy(action_input.get("invited_people")),
                     ])
@@ -367,6 +379,8 @@ class Bot:
         end_time = action_input.get("end_time")
         description = action_input.get("description", "")
         invited_people = action_input.get("invited_people", [])
+        if not state["is_boss"] and state["user_email"] not in invited_people and state["user_email"] != "":
+            invited_people.append(state["user_email"])
         location = action_input.get("location", "")
         google_meet_link = ""
 

@@ -67,11 +67,14 @@ Now you have to extract personal information from a message.
 Return a JSON object with this format:
 {
     "username": "<name>"
+    "user_email": "<email>"
 }
-Only fill "username" with what is explicitly said in the input meaning the personal name of the user.
+Only fill "username" with what is explicitly said in the input meaning the personal name of the user
+and user_email with what is explicitly said in the input meaning the email address of the user.
 If the name is not present, use "unknown".
 """
 
+# IMPROVE THIS PROMPT
 identify_intent_base = """
 [TASK] 
 Now you have to extract user intention from the message.
@@ -80,6 +83,15 @@ Return a JSON object with this format:
     "intent": "<intention>"
 }
 Valid intention options: 'schedule', 'list', 'cancel', 'update', 'none'
+
+Explanation for each intention:
+
+- schedule: the user clearly wants to schedule/create/book a meeting
+- list: the user wants to know information 
+- cancel: the user wants you to identify a meeting in order to cancel
+- update: the user wants you to identify a meeting in order to update some information
+- none: the user still does not show a clear valid intention
+
 Unclear, non existing or invalid intents must be classified as 'none'.
 Choose only one option.
 Only fill "intent" with what is explicitly said in the input about what the user wants.
