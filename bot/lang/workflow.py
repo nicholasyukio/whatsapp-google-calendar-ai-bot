@@ -14,7 +14,8 @@ if is_local:
     from dotenv import load_dotenv
     load_dotenv()  # Load .env
 
-BOSS_NAME = "Nicholas"
+BOSS_NAME = os.getenv("BOSS_NAME")
+BOSS_ID = os.getenv("BOSS_ID")
 
 class ChatMessage(TypedDict):
     role: Literal["system", "user", "assistant"]
@@ -224,7 +225,6 @@ class Bot:
     
     def generate_confirmation_response(self, state) -> str:
         success = state["action_result"]["success"]
-        info = state["action_result"]["info"]
         intent = state["user_intent"]
         if success:
             if intent == "list":
@@ -238,35 +238,24 @@ class Bot:
     # LangGraph nodes and edges
 
     def n_identify_user(self, state):
-        print("n_identify_user")
-        print(state)
-        user_id = state["user_id"]
-        is_boss = state["is_boss"]
-        username = state["username"]
-        print("Node n_identify_user")
-        if state["user_id"] == "":
-            user_id = "boss" if BOSS_NAME in state["input_msg"] else "other"
-            is_boss = user_id == "boss"
+        if state["user_id"] == BOSS_ID:
+            state["is_boss"] = True
+            state["username"] = BOSS_NAME
+        else:
+            state["is_boss"] = False
             username_result = self.identify_user(state)
             try:
-                username = username_result["username"]
+                state["username"] = username_result["username"]
             except Exception as e:
                 print(f"Unexpected error with JSON: {e}")
-            print(username_result)
-            print("# user_id: ", user_id)
-            print("# is_boss: ", is_boss)
-            print("# username: ", username)
-
-        state.update({"user_id": user_id, "is_boss": is_boss, "username": username})
+                state["username"] = ""
         return state
 
     def n_identify_intent(self, state):
-        print("Node n_identify_intent")
         intent_json = self.identify_intent(state)
         try:
-            if intent_json["intent"] in ["schedule", "list", "cancel", "update"]:
+            if intent_json["intent"] in ["schedule", "list", "cancel", "update", "none"]:
                 intent = intent_json["intent"]
-                print("# User intent: ", intent)
                 state["user_intent"] = intent
         except Exception as e:
             print(f"Unexpected error with JSON: {e}")
@@ -298,7 +287,6 @@ class Bot:
             action = "greet"
         elif state["user_intent"] in ["schedule", "list", "cancel", "update"]:
             action_input_json = self.extract_action_input(state)
-            print("Extracted action input:", action_input_json)
             state["action_input"] = action_input_json  # optionally update state with extracted input
             if has_required_fields(state["user_intent"], action_input_json) or state["user_intent"] in ["cancel", "update"]:
                 action = "take_intent"
@@ -364,7 +352,6 @@ class Bot:
         return state
 
     def n_send_response(self, state):
-        print(f"Bot: {state['response']}")
         # Add user input and bot response to context
         updated_context = state["context"]
         updated_context.append({"role": "assistant", "content": state['response']})
@@ -615,7 +602,6 @@ class Bot:
             # It seems success is not returning the real status
             if success:
                 info = f"The meeting '{event_name}' has been successfully canceled."
-                print(f"The meeting '{event_name}' with id '{event_id}' has been successfully canceled.")
             else:
                 info = f"Failed to cancel the meeting '{event_name}'."
             # Update the state with the canceled meeting result

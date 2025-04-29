@@ -12,6 +12,8 @@ from bot.whatsapp.whatsapp_api import *
 from bot.lang.workflow import Bot
 from bot.lang.database import save_state, load_state, is_context_expired
 
+import bot.lang.database as database
+
 is_local = os.path.exists('.env')
 
 if is_local:
@@ -55,30 +57,35 @@ def whatsapp_webhook(request):
                                 # Extract message details
                                 phone_number = message.get("from")
                                 message_text = message.get("text", {}).get("body", "")
+                                message_id = message.get("id")
+
+                                is_message_new = database.register_message_id(message_id)
+
+                                if is_message_new:
                                 
-                                # Log incoming message
-                                logger.info(f"Processing message from {phone_number}: {message_text}")
-                                print(f"\n{'='*50}")
-                                print(f"📱 RECEIVED MESSAGE FROM: {phone_number}")
-                                print(f"💬 MESSAGE: {message_text}")
-                                print(f"{'='*50}\n")
-                                
-                                if not phone_number or not message_text:
-                                    continue
-                                
-                                # Create and use your Bot instance
-                                bot = Bot({})  # Initialize with empty state
-                                response = bot.process_webhook_message(phone_number, message_text)
-                                
-                                # Log outgoing message
-                                logger.info(f"Response sent to {phone_number}")
-                                print(f"\n{'='*50}")
-                                print(f"📤 SENDING RESPONSE TO: {phone_number}")
-                                print(f"💬 RESPONSE: {response}")
-                                print(f"{'='*50}\n")
-                                
-                                # Send the response back to WhatsApp
-                                send_message(phone_number, response)
+                                    # Log incoming message
+                                    logger.info(f"Processing message from {phone_number}: {message_text}")
+                                    print(f"\n{'='*50}")
+                                    print(f"📱 RECEIVED MESSAGE FROM: {phone_number}")
+                                    print(f"💬 MESSAGE: {message_text}")
+                                    print(f"{'='*50}\n")
+                                    
+                                    if not phone_number or not message_text:
+                                        continue
+                                    
+                                    # Create and use your Bot instance
+                                    bot = Bot({})  # Initialize with empty state
+                                    response = bot.process_webhook_message(phone_number, message_text)
+                                    
+                                    # Log outgoing message
+                                    logger.info(f"Response sent to {phone_number}")
+                                    print(f"\n{'='*50}")
+                                    print(f"📤 SENDING RESPONSE TO: {phone_number}")
+                                    print(f"💬 RESPONSE: {response}")
+                                    print(f"{'='*50}\n")
+                                    
+                                    # Send the response back to WhatsApp
+                                    send_message(phone_number, response)
                 
                 return HttpResponse("OK", status=200)
             else:

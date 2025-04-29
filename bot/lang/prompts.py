@@ -1,7 +1,8 @@
 # prompts.py
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
-now = datetime.now().isoformat()
+now = datetime.now(ZoneInfo("America/Sao_Paulo")).isoformat()
 
 BOSS_NAME = "Nicholas"
 

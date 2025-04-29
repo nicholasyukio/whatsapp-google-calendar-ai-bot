@@ -3,6 +3,7 @@ import os
 import boto3
 import datetime
 from typing import Optional, Tuple
+from botocore.exceptions import ClientError
 
 is_local = os.path.exists('.env')
 
@@ -20,6 +21,7 @@ session = boto3.Session(
 
 # Set your table name
 TABLE_NAME = "whatsapp-google-calendar-ai-bot-context"
+TABLE_NAME_MSGIDS = "whatsapp-google-calendar-ai-bot-msgids"
 
 # Initialize DynamoDB resource
 dynamodb = boto3.resource('dynamodb')
@@ -50,11 +52,54 @@ def create_table():
     except dynamodb_client.exceptions.ResourceInUseException:
         print("Table already exists.")
 
+def create_table_for_message_ids():
+    """
+    Create a DynamoDB table to store processed message_ids
+    Run this once.
+    """
+    try:
+        dynamodb_client = boto3.client('dynamodb')
+
+        response = dynamodb_client.create_table(
+            TableName=TABLE_NAME_MSGIDS,
+            KeySchema=[
+                {'AttributeName': 'message_id', 'KeyType': 'HASH'},  # Partition key
+            ],
+            AttributeDefinitions=[
+                {'AttributeName': 'message_id', 'AttributeType': 'S'},
+            ],
+            BillingMode='PAY_PER_REQUEST',  # So you don't have to set capacity units manually
+        )
+        print("Creating table...")
+        dynamodb_client.get_waiter('table_exists').wait(TableName=TABLE_NAME_MSGIDS)
+        print("Table created successfully.")
+    
+    except dynamodb_client.exceptions.ResourceInUseException:
+        print("Table already exists.")
+
+def register_message_id(message_id: str) -> bool:
+    """
+    Search for the message_id in the database, and if not found, register it.
+    Returns:
+        True if not found and then saved, False if found
+    """
+    table = dynamodb.Table(TABLE_NAME_MSGIDS) 
+    try:
+        table.put_item(
+            Item={'message_id': message_id},
+            ConditionExpression='attribute_not_exists(message_id)'
+        )
+        return True
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            return False
+        else:
+            raise
+
 def save_state(user_id: str, state: dict):
     """
     Save or update the user's state in the database.
     """
-
     table.put_item(
         Item=state
     )
@@ -83,4 +128,6 @@ def is_context_expired(updated_at_str: str, threshold_minutes: int = 1440) -> bo
     return (now - updated_at) > datetime.timedelta(minutes=threshold_minutes)
 
 if __name__ == "__main__":
-    create_table()
+    #create_table()
+    #print(register_message_id("f2r33f4v"))
+    pass
