@@ -2,16 +2,19 @@ from langgraph.graph import StateGraph, END
 from typing import TypedDict, List, Literal
 from datetime import datetime, timedelta, time
 import math
-import google_calendar
+import bot.lang.google_calendar as google_calendar
 import numpy as np
-import prompts
+import bot.lang.prompts as prompts
 import json
 from openai import OpenAI
-from dotenv import load_dotenv
 import os
-import database
+import bot.lang.database as database
 
-load_dotenv()
+is_local = os.path.exists('.env')
+
+if is_local:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load .env
 
 BOSS_NAME = "Nicholas"
 
@@ -729,20 +732,32 @@ class Bot:
     def create_new_state(self, phone_number: str) -> BotState:
         """Create a new state for a conversation."""
         new_state = {
-            "input_msg": "",
-            "context": [],
-            "is_boss": False,
-            "greeted": False,
-            "user_id": phone_number,  # Use phone number as user_id
-            "user_email": "",
-            "username": "",
-            "user_intent": "none",
-            "chosen_action": "greet",
-            "action_input": {},
-            "action_result": {},
-            "response": "",
-            "updated_at_utc": datetime.now().isoformat()
-        }
+                "input_msg": "",
+                "context": [],
+                "is_boss": False,
+                "greeted": False,
+                "user_id": phone_number,
+                "user_email": "",
+                "username": "",
+                "user_intent": "none",
+                "chosen_action": "take_intent",
+                "action_input": {
+                    "event_id": "",
+                    "event_name": "",
+                    "start_time": "",
+                    "end_time": "",
+                    "description": "",
+                    "invited_people": [],
+                    "location": "",
+                    "is_update": False
+                },
+                "action_result": {
+                    "success": False,
+                    "info": ""
+                },
+                "response": "",
+                "updated_at_utc": datetime.utcnow().isoformat()
+            }
         # Save the new state to DynamoDB
         database.save_state(phone_number, new_state)
         return new_state
@@ -754,10 +769,11 @@ class Bot:
         # Update the state with new message
         self.state["input_msg"] = message_text
         self.state["updated_at_utc"] = datetime.now().isoformat()
-        
+        self.state["context"].append({"role": "user", "content": message_text})
+
         # Build and run the graph
-        self.build_graph()
-        final_state = self.state_graph.invoke(self.state)
+        graph = self.build_graph()
+        final_state = graph.invoke(self.state)
         
         # Save the updated state to DynamoDB
         database.save_state(phone_number, final_state)

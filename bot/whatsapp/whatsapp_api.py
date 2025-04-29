@@ -2,10 +2,11 @@ import os
 import json
 import requests
 import logging
-from dotenv import load_dotenv
+is_local = os.path.exists('.env')
 
-# Load environment variables
-load_dotenv()
+if is_local:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load .env
 
 # Configure logging
 logger = logging.getLogger(__name__)

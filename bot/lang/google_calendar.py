@@ -5,9 +5,11 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 import pickle
-from dotenv import load_dotenv
+is_local = os.path.exists('.env')
 
-load_dotenv()
+if is_local:
+    from dotenv import load_dotenv
+    load_dotenv()  # Load .env
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar']

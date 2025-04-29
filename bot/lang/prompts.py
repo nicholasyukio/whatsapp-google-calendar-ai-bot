@@ -23,7 +23,7 @@ tone_prompt = """
 - If you send messages in a language that is not gender-specific, make sure to use the feminine form.
 """
 
-user_boss = """
+user_boss = f"""
 The user is your boss, his name is {BOSS_NAME}, and wants your assistance to manage his agenda.
 To greet your boss, always say "Hello, Mr {BOSS_NAME}" or a similar respectful greeting.
 You can see all events in the calendar, regardless of who created them.

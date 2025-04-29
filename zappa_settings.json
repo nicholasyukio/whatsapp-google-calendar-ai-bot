@@ -1,0 +1,18 @@
+{
+    "production": {
+        "app_function": "whatsapp_bot.wsgi.application",
+        "aws_region": "us-east-1",
+        "django_settings": "whatsapp_bot.settings",
+        "exclude": [
+            "boto3",
+            "dateutil",
+            "botocore",
+            "s3transfer",
+            "concurrent"
+        ],
+        "profile_name": "default",
+        "project_name": "whatsapp-google",
+        "runtime": "python3.9",
+        "s3_bucket": "wgcaib-bucket"
+    }
+}
