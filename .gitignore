@@ -4,5 +4,6 @@ db.sqlite3
 .env
 *.env
 credentials.json
+token.json
 token.pickle
 venv/

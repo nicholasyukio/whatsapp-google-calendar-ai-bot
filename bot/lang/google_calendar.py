@@ -15,7 +15,12 @@ if is_local:
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 def get_calendar_service():
-    """Gets an authorized Google Calendar API service instance."""
+    creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    service = build('calendar', 'v3', credentials=creds)
+    return service
+
+"""def get_calendar_service():
+    #Gets an authorized Google Calendar API service instance.
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first time.
@@ -36,7 +41,7 @@ def get_calendar_service():
             pickle.dump(creds, token)
 
     service = build('calendar', 'v3', credentials=creds)
-    return service
+    return service"""
 
 def create_event(summary, start_time, end_time, description=None, location=None, attendees_emails=None):
     """
@@ -237,7 +242,15 @@ def update_event(event_id, title=None, start_time=None, end_time=None, descripti
     return updated_event
 
 if __name__ == "__main__":
-    std_datetime = datetime.datetime.now()
+
+        # One time run to generate token.json
+    flow = InstalledAppFlow.from_client_secrets_file(
+        'credentials.json', SCOPES)
+    creds = flow.run_local_server(port=0)
+    with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    """std_datetime = datetime.datetime.now()
     std_datetime_iso = std_datetime.isoformat()
     std_datetime_1_hour_later = std_datetime + datetime.timedelta(hours=1)
     std_datetime_1_hour_later_iso = std_datetime_1_hour_later.isoformat()
@@ -245,7 +258,9 @@ if __name__ == "__main__":
     std_datetime_7_days_later_iso = std_datetime_7_days_later.isoformat()
 
     std_datetime_2_iso = "2025-04-29T20:00:00.000000"
-    std_datetime_2_iso_1_hour_later = "2025-04-29T21:00:00.000000"
+    std_datetime_2_iso_1_hour_later = "2025-04-29T21:00:00.000000"""
+
+
     #create_event("Test4", std_datetime_2_iso, std_datetime_2_iso_1_hour_later, "Event description", "São José dos Campos")
     #create_event("Test 3", std_datetime_2_iso, std_datetime_2_iso_1_hour_later, "Event description", "London")
     #check_availability(std_datetime_2_iso, std_datetime_2_iso_1_hour_later)
@@ -253,7 +268,6 @@ if __name__ == "__main__":
     #cancel_event("kj66cj4lbev0p33pr0k0p8jnmo")
     #std_datetime_2_iso_obj = datetime.fromisoformat(std_datetime_2_iso)
     #std_datetime_2_iso_1_hour_later_obj = datetime.fromisoformat(std_datetime_2_iso_1_hour_later)
-    update_event("g3b0o1govcs2b13ddufu9cpu6s", start_time=std_datetime_2_iso, end_time=std_datetime_2_iso_1_hour_later, attendees_emails=["salve@salveregina.com.br"])
     # create_event(
     # summary="Project Meeting",
     # start_time="2025-04-27T10:00:00",
