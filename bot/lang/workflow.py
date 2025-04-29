@@ -341,7 +341,10 @@ class Bot:
         if result["success"]:
             info_to_context = {"role": "assistant", "content": f"[INFO] Action {intent} was SUCCESSFUL, details: {result.get('info', 'No details available')}"}
             state["user_intent"] = "none"
+            state["action_input"]["is_update"] = False
         else:
+            if "pending" in result["info"] and "confirm" in result["info"]:
+                state["action_input"]["is_update"] = True
             info_to_context = {"role": "assistant", "content": f"[INFO] Action {intent} was NOT SUCCESSFUL, details: {result.get('info', 'No details available')}"}
         state["context"].append(info_to_context)
         state["action_result"] = result
