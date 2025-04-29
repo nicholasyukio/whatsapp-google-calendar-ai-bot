@@ -654,24 +654,35 @@ class Bot:
 
         if event_id:
             if is_update:
-                # Build a dictionary of the fields to update only if they are not blank.
-                update_params = {}
                 if event_name:
-                    update_params["title"] = event_name
-                if start_time:
-                    update_params["start_time"] = start_time
-                if end_time:
-                    update_params["end_time"] = end_time
-                if description:
-                    update_params["description"] = description
-                if location:
-                    update_params["location"] = location
-                if attendees_emails:
-                    update_params["attendees_emails"] = attendees_emails
-
-                gresult = google_calendar.update_event(
+                    gresult = google_calendar.update_event(
                     event_id=event_id,
-                    **update_params
+                    title=event_name
+                    )
+                if start_time:
+                    gresult = google_calendar.update_event(
+                    event_id=event_id,
+                    start_time=start_time
+                    )
+                if end_time:
+                    gresult = google_calendar.update_event(
+                    event_id=event_id,
+                    end_time=end_time
+                    )
+                if description:
+                    gresult = google_calendar.update_event(
+                    event_id=event_id,
+                    description=description
+                    )
+                if location:
+                    gresult = google_calendar.update_event(
+                    event_id=event_id,
+                    location=location
+                    )
+                if attendees_emails:
+                    gresult = google_calendar.update_event(
+                    event_id=event_id,
+                    attendees_emails=attendees_emails
                     )
                 self.state["action_input"]["is_update"] = False
                 success = (gresult["status"] == "confirmed")
