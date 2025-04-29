@@ -97,6 +97,8 @@ Return a JSON object with this format:
   "invited_people": ["<emails of invited people>"],
   "location": "<location or 'online'>"
 }
+By default, the end_time is one hour later than the start_time, so, unless specified otherwise,
+if the start_time is provided but end_time is not, determine end_time by adding one hour to start_time.
 Only include information that is explicitly stated or clearly implied. Use "unknown"
 or empty list if unsure. Do NOT include any other fields or explanations.
 """
@@ -173,9 +175,7 @@ Based on the intent, check what is missing. The required information for each in
     - event_name (string)
     - start_time (datetime string)
     - end_time (datetime string)
-    - description (optional)
     - invited_people (list of names or emails)
-    - meet_link (optional)
 
 - "list":
     - start_time (datetime string)
