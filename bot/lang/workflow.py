@@ -265,9 +265,10 @@ class Bot:
     def n_identify_intent(self, state):
         intent_json = self.identify_intent(state)
         try:
-            if intent_json["intent"] in ["schedule", "list", "cancel", "update", "none"]:
-                intent = intent_json["intent"]
-                state["user_intent"] = intent
+            if intent_json["intent"] in ["schedule", "list", "cancel", "update"]:
+                state["user_intent"] = intent_json["intent"]
+            elif state["action_input"]["is_update"]:
+                state["user_intent"] = "update"
         except Exception as e:
             print(f"Unexpected error with JSON: {e}")
             intent = state["user_intent"]
@@ -667,6 +668,7 @@ class Bot:
                     event_id=event_id,
                     **update_params
                     )
+                self.state["action_input"]["is_update"] = False
                 success = (gresult["status"] == "confirmed")
                 if success:
                     info = f"""The meeting '{event_name}' has been updated successfully. New details: Start: {start_time}, End: {end_time}, 
