@@ -12,7 +12,7 @@
         ],
         "profile_name": "default",
         "project_name": "whatsapp-google",
-        "runtime": "python3.9",
+        "runtime": "python3.10",
         "s3_bucket": "wgcaib-bucket"
     }
 }
