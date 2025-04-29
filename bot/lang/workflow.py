@@ -635,12 +635,12 @@ class Bot:
 
     def update_meeting(self, state, action_input: ActionInput) -> str:
         event_id = action_input.get("event_id", None)
-        event_name = action_input.get("event_name", "")
-        start_time = action_input.get("start_time", "")
-        end_time = action_input.get("end_time", "")
-        description = action_input.get("description", "")
-        location = action_input.get("location", "")
-        attendees_emails = action_input.get("invited_people", )
+        event_name = action_input.get("event_name", "").strip()
+        start_time = action_input.get("start_time", "").strip()
+        end_time = action_input.get("end_time", "").strip()
+        description = action_input.get("description", "").strip()
+        location = action_input.get("location", "").strip()
+        attendees_emails = action_input.get("invited_people", [])
         is_update = action_input.get("is_update", False)
 
         success = False
@@ -675,7 +675,7 @@ class Bot:
                     info = f"Failed to update the meeting '{event_name}' in Google Calendar."
             else:
                 self.state["action_input"] = {
-                    **state["action_input"],
+                    **self.state["action_input"],
                     "event_name": "",
                     "start_time": "",
                     "end_time": "",
