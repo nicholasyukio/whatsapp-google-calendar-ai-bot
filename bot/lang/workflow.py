@@ -321,7 +321,7 @@ class Bot:
                 elif intent == "cancel":
                     result = self.cancel_meeting(state)
                 elif intent == "update":
-                    result = self.update_meeting(state, action_input)
+                    result = self.update_meeting(state)
                 else:
                     result = {
                         "success": False,
