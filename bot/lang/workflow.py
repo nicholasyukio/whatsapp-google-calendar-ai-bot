@@ -701,7 +701,7 @@ class Bot:
         if not event_id:
             meetings_list = self.list_meetings(state, state["action_input"], include_past=False)
             info = "[INFO] Meetings the user can update with their Ids:\n" + meetings_list["info"]
-            info_to_context = {"role": "assistant", "content": f"[INFO] {result.get('info', 'No details available')}"}
+            info_to_context = {"role": "assistant", "content": info}
             event_id_json = self.completion(state, profile="extract_action_event_id", is_json=True, add_info=info_to_context)
             try:
                 event_id = event_id_json["event_id"]
