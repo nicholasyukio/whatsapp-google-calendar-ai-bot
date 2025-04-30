@@ -665,14 +665,15 @@ class Bot:
             }
         return result
 
-    def update_meeting(self, state, action_input: ActionInput) -> str:
-        event_id = action_input.get("event_id", None)
-        event_name = action_input.get("event_name", None)
-        start_time = action_input.get("start_time", None)
-        end_time = action_input.get("end_time", None)
-        description = action_input.get("description", None)
-        location = action_input.get("location", None)
-        attendees_emails = action_input.get("invited_people", [])
+    def update_meeting(self, state) -> str:
+        action_input_json = self.extract_action_input(state)
+        event_id = action_input_json.get("event_id", None)
+        event_name = action_input_json.get("event_name", None)
+        start_time = action_input_json.get("start_time", None)
+        end_time = action_input_json.get("end_time", None)
+        description = action_input_json.get("description", None)
+        location = action_input_json.get("location", None)
+        attendees_emails = action_input_json.get("invited_people", [])
 
         if start_time:
             if start_time != "unknown":
