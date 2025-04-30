@@ -245,9 +245,9 @@ class Bot:
             if state["username"] == "" or state["user_email"] == "":
                 username_result = self.identify_user(state)
                 try:
-                    if state["username"] == "":
+                    if state["username"] == "" or state["username"] == "unknown":
                         state["username"] = username_result["username"]
-                    if state["user_email"] == "":
+                    if state["user_email"] == "" or state["user_email"] == "unknown":
                         if "@" in username_result["user_email"] and "." in username_result["user_email"].split("@")[-1]:
                             state["user_email"] = username_result["user_email"]
                         else:
