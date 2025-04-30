@@ -625,33 +625,22 @@ class Bot:
 
     def update_meeting(self, state, action_input: ActionInput) -> str:
         event_id = action_input.get("event_id", None)
-        event_name = action_input.get("event_name", "").strip()
-        start_time = action_input.get("start_time", "").strip()
-        end_time = action_input.get("end_time", "").strip()
-        description = action_input.get("description", "").strip()
-        location = action_input.get("location", "").strip()
+        event_name = action_input.get("event_name", None)
+        start_time = action_input.get("start_time", None)
+        end_time = action_input.get("end_time", None)
+        description = action_input.get("description", None)
+        location = action_input.get("location", None)
         attendees_emails = action_input.get("invited_people", [])
-
-        # Build a dictionary of the fields to update only if they are not blank.
-        update_params = {}
-        if event_name:
-            update_params["title"] = event_name
-        if start_time:
-            update_params["start_time"] = start_time
-        if end_time:
-            update_params["end_time"] = end_time
-        if description:
-            update_params["description"] = description
-        if location:
-            update_params["location"] = location
-        if attendees_emails:
-            update_params["attendees_emails"] = attendees_emails
-
         if event_id:
             try:
                 gresult = google_calendar.update_event(
                     event_id=event_id,
-                    **update_params  # Only the non-blank parameters will be passed
+                    title=event_name,
+                    start_time=start_time,
+                    end_time=end_time,
+                    description=description,
+                    location=location,
+                    attendees_emails=attendees_emails
                 )
                 success = (gresult["status"] == "confirmed")
                 info = f"""The meeting '{event_name}' has been updated successfully. 
@@ -665,7 +654,6 @@ class Bot:
             meetings_list = self.list_meetings(state, state["action_input"], include_past=False)
             success = False
             info = "[INFO] (Update pending) Meetings the user can update:\n" + meetings_list["info"]
-
         # Return the result
         result = {
             "success": success,
