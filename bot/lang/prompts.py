@@ -165,6 +165,7 @@ tomorrow at the same start and end time, you must fill the start_time and end_ti
 data relative to tomorrow, not today.
 Return a JSON object with this format:
 {
+  "event_id": "<id of the event or 'unknown'>",
   "event_name": "<name of the event>",
   "start_time": "<start time in ISO 8601 or 'unknown'>",
   "end_time": "<end time in ISO 8601 or 'unknown'>",
