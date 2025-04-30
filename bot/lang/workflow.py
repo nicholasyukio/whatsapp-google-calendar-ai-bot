@@ -186,7 +186,7 @@ class Bot:
             "location": ""
         }
         if state["user_intent"] == "schedule":
-            expected_fields = ["event_name", "start_time", "end_time", "description", "invited_people", "location"]
+            expected_fields = ["event_name", "start_time", "end_time", "description", "location"]
             profile = "extract_action_input_for_schedule"
         elif state["user_intent"] == "list":
             expected_fields = ["start_time", "end_time"]
@@ -281,8 +281,7 @@ class Bot:
                         not is_falsy(action_input.get("event_name")),
                         not is_falsy(action_input.get("start_time")),
                         not is_falsy(state.get("user_email")),
-                        not is_falsy(action_input.get("end_time")),
-                        not is_falsy(action_input.get("invited_people")),
+                        not is_falsy(action_input.get("end_time"))
                     ])
                 case "cancel" | "update":
                     return not is_falsy(action_input.get("event_id"))
