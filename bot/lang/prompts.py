@@ -108,6 +108,9 @@ Return a JSON object with this format:
 }
 By default, the end_time is one hour later than the start_time, so, unless specified otherwise,
 if the start_time is provided but end_time is not, determine end_time by adding one hour to start_time.
+
+If unsure, include in invited_people list the email address of the user.
+
 Only include information that is explicitly stated or clearly implied. Use "unknown"
 or empty list if unsure. Do NOT include any other fields or explanations.
 """
