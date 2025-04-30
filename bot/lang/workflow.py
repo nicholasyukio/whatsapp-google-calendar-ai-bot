@@ -675,28 +675,30 @@ class Bot:
         attendees_emails = action_input.get("invited_people", [])
 
         if start_time:
-            if end_time:
-                avail = self.is_time_slot_available(start_time, end_time, event_id)
-            else:
-                start_time_dt = datetime.fromisoformat(start_time)
-                end_time_dt = start_time_dt + timedelta(hours=1)
-                end_time_d = end_time_dt.isoformat()
-                avail = self.is_time_slot_available(start_time, end_time_d, event_id)
+            if start_time != "unknown":
+                if end_time:
+                    if end_time != "unknown":
+                        avail = self.is_time_slot_available(start_time, end_time, event_id)
+                    else:
+                        start_time_dt = datetime.fromisoformat(start_time)
+                        end_time_dt = start_time_dt + timedelta(hours=1)
+                        end_time_d = end_time_dt.isoformat()
+                        avail = self.is_time_slot_available(start_time, end_time_d, event_id)
 
-            info_start = f"Cannot update the meeting in Google Calendar."
-            info_end = ""
-            if avail == "time_reverted":
-                info_end = "Failure reason: start time cannot be later than end time"
-            elif avail == "rest_time":
-                info_end = "Failure reason: this time is blocked because it is in the boss' rest time"
-            elif avail == "already_busy":
-                info_end = "Failure reason: the time slot is already occupied"
-            result = {
-                "success": False,
-                "info": f"{info_start}\n{info_end}"
-            }
-            if avail != "available" and avail != "same_event":
-                return result
+                    info_start = f"Cannot update the meeting in Google Calendar."
+                    info_end = ""
+                    if avail == "time_reverted":
+                        info_end = "Failure reason: start time cannot be later than end time"
+                    elif avail == "rest_time":
+                        info_end = "Failure reason: this time is blocked because it is in the boss' rest time"
+                    elif avail == "already_busy":
+                        info_end = "Failure reason: the time slot is already occupied"
+                    result = {
+                        "success": False,
+                        "info": f"{info_start}\n{info_end}"
+                    }
+                    if avail != "available" and avail != "same_event":
+                        return result
 
         if not event_id:
             meetings_list = self.list_meetings(state, state["action_input"], include_past=False)
