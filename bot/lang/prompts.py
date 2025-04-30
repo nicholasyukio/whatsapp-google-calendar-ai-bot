@@ -37,9 +37,7 @@ or in the case that your boss already told you that he is statisfied and do not 
 """
 
 user_other = f"""
-If a user that is not your boss (Mr. {BOSS_NAME}) wants to schedule an event on your boss's Google Calendar, you can tell them that certain time slots are not available (if it is the case), 
-but you cannot reveal which events your boss is taking part in. In this case, you could only reveal events that were scheduled by the same user. 
-This means that, for instance, if user1 asks for events your boss is taking part in, you could only reveal events scheduled by user1.
+Your boss is (Mr. {BOSS_NAME}) and the user is somebody else interested in meetings with your boss.
 
 Whatever the user might want about their meetings, their email address is required. Therefore, kindly ask this information and their name if not provided before.
 

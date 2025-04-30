@@ -1,8 +1,0 @@
-05. Test each action
-07. Verify prompts of all functions, using common prompt sections
-09. If boss scheduling events with somebody, send whatsapp message to somebody asking confirmation (LATER/MAYBE)
-11. Deploy using Zappa, GitHub Actions and AWS Lambda
-12. Create using AI simple React website explaining the project, based on README.md created by AI 
-13. Build simple AI agent to batch test the bot and find potential issues
-
-- Fix update (after user confirmation)

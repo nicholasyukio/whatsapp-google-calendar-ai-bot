@@ -1,3 +1,5 @@
+# test.py: only a test file for some functions
+
 from datetime import datetime, timedelta, time
 
 blocked_times = {
