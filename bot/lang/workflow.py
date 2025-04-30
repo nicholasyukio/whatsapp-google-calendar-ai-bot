@@ -419,7 +419,7 @@ class Bot:
         
         return result
     
-    def is_time_slot_available(self, start_time_str: str, end_time_str: str) -> str:
+    def is_time_slot_available(self, start_time_str: str, end_time_str: str, event_id: str = None) -> str:
         start_time = datetime.fromisoformat(start_time_str)
         end_time = datetime.fromisoformat(end_time_str)
 
@@ -442,6 +442,10 @@ class Bot:
         )
 
         for event in events:
+            this_event_id = event.get('id')
+            if event_id:
+                if event_id == this_event_id:
+                    return "same_event"
             event_start = datetime.fromisoformat(event['start']['dateTime'])
             event_end = datetime.fromisoformat(event['end']['dateTime'])
 
@@ -667,12 +671,12 @@ class Bot:
 
         if start_time:
             if end_time:
-                avail = self.is_time_slot_available(start_time, end_time)
+                avail = self.is_time_slot_available(start_time, end_time, event_id)
             else:
                 start_time_dt = datetime.fromisoformat(start_time)
                 end_time_dt = start_time_dt + timedelta(hours=1)
                 end_time_d = end_time_dt.isoformat()
-                avail = self.is_time_slot_available(start_time, end_time_d)
+                avail = self.is_time_slot_available(start_time, end_time_d, event_id)
 
             info_start = f"Cannot update the meeting in Google Calendar."
             info_end = ""
@@ -686,7 +690,7 @@ class Bot:
                 "success": False,
                 "info": f"{info_start}\n{info_end}"
             }
-            if avail != "available":
+            if avail != "available" and avail != "same_event":
                 return result
 
         if event_id:
