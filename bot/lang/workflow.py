@@ -373,8 +373,8 @@ class Bot:
         end_time = action_input.get("end_time")
         description = action_input.get("description", "")
         invited_people = action_input.get("invited_people", [])
-        if not state["is_boss"] and state["user_email"] not in invited_people and state["user_email"] != "":
-            invited_people.append(state["user_email"])
+        if state["is_boss"] == False and state["user_email"] != "":
+            invited_people = [state["user_email"]]
         location = action_input.get("location", "")
         google_meet_link = ""
 
