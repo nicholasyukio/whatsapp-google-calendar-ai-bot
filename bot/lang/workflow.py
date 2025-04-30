@@ -62,8 +62,8 @@ class Bot:
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.blocked_times = {
             "weekdays": [
-                (time(0, 0), time(8, 0)),
-                (time(22, 0), time(23, 59)),
+                (time(0, 0), time(7, 59)),
+                (time(20, 0), time(23, 59)),
             ],
             "weekends": "all",
         }
@@ -242,17 +242,18 @@ class Bot:
             state["user_email"] = BOSS_EMAIL
         else:
             state["is_boss"] = False
-            username_result = self.identify_user(state)
-            try:
-                state["username"] = username_result["username"]
-                if "@" in username_result["user_email"] and "." in username_result["user_email"].split("@")[-1]:
-                    state["user_email"] = username_result["user_email"]
-                else:
-                    state["user_email"] = ""
-            except Exception as e:
-                print(f"Unexpected error with JSON: {e}")
-                state["username"] = ""
-                state["user_email"] = ""
+            if state["username"] == "" or state["user_email"] == "":
+                username_result = self.identify_user(state)
+                try:
+                    if state["username"] == "":
+                        state["username"] = username_result["username"]
+                    if state["user_email"] == "":
+                        if "@" in username_result["user_email"] and "." in username_result["user_email"].split("@")[-1]:
+                            state["user_email"] = username_result["user_email"]
+                        else:
+                            state["user_email"] = ""
+                except Exception as e:
+                    print(f"Unexpected error with JSON: {e}")
         return state
 
     def n_identify_intent(self, state):
@@ -333,7 +334,8 @@ class Bot:
             state["user_intent"] = "none"
         else:
             info_to_context = {"role": "assistant", "content": f"[INFO] Action {intent} was NOT SUCCESSFUL, details: {result.get('info', 'No details available')}"}
-        state["context"].append(info_to_context)
+        if intent in ["schedule", "list", "cancel", "update"] and chosen_action == "take_intent": # to avoid appending info to context about invalid intents and action of not taking intent
+            state["context"].append(info_to_context)
         state["action_result"] = result
         return state
 
@@ -376,10 +378,9 @@ class Bot:
         location = action_input.get("location", "")
         google_meet_link = ""
 
-        start_time_f = datetime.fromisoformat(start_time)
-        blocked = self.is_time_blocked(start_time_f)
+        avail = self.is_time_slot_available(start_time, end_time)
 
-        if state["is_boss"] or not blocked:
+        if avail == "available":
             # Assuming google_calendar.create_event is an external function:
             gresult = google_calendar.create_event(
                 summary=event_name,
@@ -400,15 +401,55 @@ class Bot:
                         f"Location: {location}. Google Meet link: {google_meet_link}"
             }
         else:
+            info_start = f"""The meeting '{event_name}' scheduled from {start_time} to {end_time}. "
+                         Participants: {', '.join(invited_people)}. Event description: {description}, "
+                         Location: {location}. Google Meet link: {google_meet_link}"""
+            if avail == "time_reverted":
+                info_end = "Failure reason: start time cannot be later than end time"
+            elif avail == "rest_time":
+                info_end = "Failure reason: this time is blocked because it is in the boss' rest time"
+            elif avail == "already_busy":
+                info_end = "Failure reason: the time slot is already occupied"
+            else:
+                info_end = "Failure reason: unknown"
             result = {
                 "success": False,
-                "info": f"The meeting '{event_name}' scheduled from {start_time} to {end_time}. "
-                        f"Participants: {', '.join(invited_people)}. Event description: {description}, "
-                        f"Location: {location}. Google Meet link: {google_meet_link}"
-                        f"Failure reason: Time slot not available"
+                "info": f"{info_start}\n{info_end}"
             }
         
         return result
+    
+    def is_time_slot_available(self, start_time_str: str, end_time_str: str) -> str:
+        start_time = datetime.fromisoformat(start_time_str)
+        end_time = datetime.fromisoformat(end_time_str)
+
+        if start_time > end_time:
+            return "time_reverted"
+
+        # 1. Check if time is blocked
+        current = start_time
+        while current < end_time:
+            if self.is_time_blocked(current):
+                return "rest_time"
+            current += timedelta(minutes=1)
+
+        # 2. Check for overlap with busy events
+        events = google_calendar.list_events(
+            time_min=start_time_str,
+            time_max=end_time_str,
+            max_results=100,
+            include_past=False
+        )
+
+        for event in events:
+            event_start = datetime.fromisoformat(event['start']['dateTime'])
+            event_end = datetime.fromisoformat(event['end']['dateTime'])
+
+            # Check if the input time overlaps with any busy event
+            if not (end_time <= event_start or start_time >= event_end):
+                return "already_busy"
+
+        return "available"
 
     def suggest_time_slots(self, state, action_input: ActionInput, slot_duration_minutes: int = 60) -> ActionResult:
         start_time_str = action_input.get("start_time")
@@ -474,7 +515,7 @@ class Bot:
             "info": info
         }
 
-    def list_meetings(self, state, action_input: ActionInput, user_email: str = "", include_past: bool = True) -> ActionResult:
+    def list_meetings(self, state, action_input: ActionInput, include_past: bool = True) -> ActionResult:
         start_time = action_input.get("start_time")
         end_time = action_input.get("end_time")
         
@@ -501,8 +542,8 @@ class Bot:
                 end = event.get('end', {}).get('dateTime', 'Unknown End')
                 attendees = event.get('attendees', [])
                 list_event = False
-                if user_email != "":
-                    if user_email in attendees:
+                if state["user_email"] != "":
+                    if state["user_email"] in attendees:
                         list_event = True
                 elif state["is_boss"]:
                    list_event = True
@@ -632,6 +673,30 @@ class Bot:
         description = action_input.get("description", None)
         location = action_input.get("location", None)
         attendees_emails = action_input.get("invited_people", [])
+
+        if start_time:
+            if end_time:
+                avail = self.is_time_slot_available(start_time, end_time)
+            else:
+                start_time_dt = datetime.fromisoformat(start_time)
+                end_time_dt = start_time_dt + timedelta(hours=1)
+                end_time_d = end_time_dt.isoformat()
+                avail = self.is_time_slot_available(start_time, end_time_d)
+
+            info_start = f"Cannot update the meeting in Google Calendar."
+            if avail == "time_reverted":
+                info_end = "Failure reason: start time cannot be later than end time"
+            elif avail == "rest_time":
+                info_end = "Failure reason: this time is blocked because it is in the boss' rest time"
+            elif avail == "already_busy":
+                info_end = "Failure reason: the time slot is already occupied"
+            result = {
+                "success": False,
+                "info": f"{info_start}\n{info_end}"
+            }
+            if avail != "available":
+                return result
+
         if event_id:
             try:
                 gresult = google_calendar.update_event(
