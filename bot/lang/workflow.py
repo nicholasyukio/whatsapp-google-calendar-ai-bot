@@ -375,7 +375,7 @@ class Bot:
         start_time = action_input.get("start_time")
         end_time = action_input.get("end_time")
         description = action_input.get("description", "")
-        invited_people = action_input.get("invited_people", [state["user_email"]])
+        invited_people = [state["user_email"]]
         location = action_input.get("location", "")
         google_meet_link = ""
 
