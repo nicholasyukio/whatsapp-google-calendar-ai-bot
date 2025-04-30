@@ -541,26 +541,17 @@ class Bot:
                 start = event.get('start', {}).get('dateTime', 'Unknown Start')
                 end = event.get('end', {}).get('dateTime', 'Unknown End')
                 attendees = event.get('attendees', [])
-                list_event = False
-                if state["user_email"] != "":
-                    if state["user_email"] in attendees:
-                        list_event = True
-                elif state["is_boss"]:
-                   list_event = True
-
-                if list_event:
-                    participants = ", ".join([attendee.get('email', 'Unknown') for attendee in attendees])
+                attendees_email_list = [attendee.get('email', 'Unknown') for attendee in attendees]
+                if state["user_email"] in attendees_email_list or state["is_boss"]:
+                    participants = ", ".join(attendees_email_list)
                     meeting_details = f"#{k}: Id: {event_id}, Meeting: {summary}, Time: {start} to {end}, Participants: {participants}"
                     meetings_list.append(meeting_details)
                     k = k + 1
-            
             info = "\n".join(meetings_list)
-        
         result = {
             "success": success,
             "info": info
         }
-        
         return result
 
     def find_meeting_id(self, state, attendee_email: str = "") -> List[str]:
