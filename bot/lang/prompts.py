@@ -200,7 +200,6 @@ Based on the intent, check what is missing. The required information for each in
     - event_name (string)
     - start_time (datetime string)
     - end_time (datetime string)
-    - invited_people (list of names or emails)
 
 - "list":
     - start_time (datetime string)
