@@ -191,14 +191,14 @@ class Bot:
             expected_fields = ["event_id", "start_time", "end_time"]
             profile = "extract_action_input_for_other"
         elif state["user_intent"] == "update":
-            if state["action_input"]["is_update"]:
+            #if state["action_input"]["is_update"]:
                 # in this case, extract action input for new values to update
                 expected_fields = []
                 profile = "extract_action_input_for_new_info" # Fix here
-            else:
-                # in this case, extract action input for listing the possible events to update
-                expected_fields = ["event_id", "start_time", "end_time"]
-                profile = "extract_action_input_for_other"
+            #else:
+            #    # in this case, extract action input for listing the possible events to update
+            #    expected_fields = ["event_id", "start_time", "end_time"]
+            #    profile = "extract_action_input_for_other"
         else:
             return full_fields
         parsed = self.completion(state, profile=profile, is_json=True)
@@ -643,55 +643,56 @@ class Bot:
         description = action_input.get("description", "").strip()
         location = action_input.get("location", "").strip()
         attendees_emails = action_input.get("invited_people", [])
-        is_update = action_input.get("is_update", False)
+        #is_update = action_input.get("is_update", False)
 
         success = False
         info = ""
 
         if event_id:
-            if is_update:
-                if event_name:
-                    gresult = google_calendar.update_event(
-                    event_id=event_id,
-                    title=event_name
-                    )
-                if start_time:
-                    gresult = google_calendar.update_event(
-                    event_id=event_id,
-                    start_time=start_time
-                    )
-                if end_time:
-                    gresult = google_calendar.update_event(
-                    event_id=event_id,
-                    end_time=end_time
-                    )
-                if description:
-                    gresult = google_calendar.update_event(
-                    event_id=event_id,
-                    description=description
-                    )
-                if location:
-                    gresult = google_calendar.update_event(
-                    event_id=event_id,
-                    location=location
-                    )
-                if attendees_emails:
-                    gresult = google_calendar.update_event(
-                    event_id=event_id,
-                    attendees_emails=attendees_emails
-                    )
-                self.state["action_input"]["is_update"] = False
-                success = (gresult["status"] == "confirmed")
-                if success:
-                    info = f"""The meeting '{event_name}' has been updated successfully. New details: Start: {start_time}, End: {end_time}, 
-                    Participants: {', '.join(attendees_emails)}"""
-                else:
-                    info = f"Failed to update the meeting '{event_name}' in Google Calendar."
+            if event_name:
+                gresult = google_calendar.update_event(
+                event_id=event_id,
+                title=event_name
+                )
+            if start_time:
+                gresult = google_calendar.update_event(
+                event_id=event_id,
+                start_time=start_time
+                )
+            if end_time:
+                gresult = google_calendar.update_event(
+                event_id=event_id,
+                end_time=end_time
+                )
+            if description:
+                gresult = google_calendar.update_event(
+                event_id=event_id,
+                description=description
+                )
+            if location:
+                gresult = google_calendar.update_event(
+                event_id=event_id,
+                location=location
+                )
+            if attendees_emails:
+                gresult = google_calendar.update_event(
+                event_id=event_id,
+                attendees_emails=attendees_emails
+                )
+            self.state["action_input"]["is_update"] = False
+            success = (gresult["status"] == "confirmed")
+            if success:
+                info = f"""The meeting '{event_name}' has been updated successfully. 
+                New details: Start: {start_time}, End: {end_time}, 
+                Description: {description}, Location: {location},
+                Participants: {', '.join(attendees_emails)}"""
             else:
-                self.state["action_input"]["is_update"] = True
-                success = False
-                info = """[INFO] (Update pending) The event the user wants to update was identified, but the user needs to clearly confirm 
-                what they want to change"""
+                info = f"Failed to update the meeting '{event_name}' in Google Calendar."
+            #else:
+            #    self.state["action_input"]["is_update"] = True
+            #    success = False
+            #    info = """[INFO] (Update pending) The event the user wants to update was identified, but the user needs to clearly confirm 
+            #    what they want to change"""
         else:
             meetings_list = self.list_meetings(state, state["action_input"], include_past=False)
             success = False
@@ -888,26 +889,3 @@ if __name__ == "__main__":
 
 # Start the bot's run method (this will enter the input loop)
     bot.run()
-
-# Nodes:
-# identify_user (use LLM to extract info)
-# identify_intent (use LLM to identify what the user wants)
-# choose_action (use LLM to choose the best action)
-# act (use LLM to format the data to be passed to Google Calendar functions)
-# gen_response (use LLM to generate the response)
-# send_response
-
-#class BotState(TypedDict):
-#    input_msg: str
-#    context: str[]
-#    is_boss: bool
-#    user_id: str
-#    user_intent: (list of options)
-#    chosen_action: (list of options)
-#    action_result: str
-#    response: str
-
-# Possible users: boss and other
-# Possible values of user_intent: schedule, list, cancel, update, none
-# Possible actions: greet, take_intent, request_more_info, follow_up (suggest)
-# Possible responses: greeting, action_result, info_request, follow_up 
