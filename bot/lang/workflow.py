@@ -675,6 +675,7 @@ class Bot:
                 avail = self.is_time_slot_available(start_time, end_time_d)
 
             info_start = f"Cannot update the meeting in Google Calendar."
+            info_end = ""
             if avail == "time_reverted":
                 info_end = "Failure reason: start time cannot be later than end time"
             elif avail == "rest_time":
