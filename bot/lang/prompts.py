@@ -170,6 +170,18 @@ Only include information that is explicitly stated or clearly implied. Use "unkn
 or empty list if unsure. Do NOT include any other fields or explanations.
 """
 
+extract_action_event_id = """
+[TASK] 
+The user wants to update a meeting, and you have to extract from the conversation and from
+the INFO saved in the assistant messages the Id of the meeting they want to update (event_id).
+Return a JSON object with this format:
+{
+  "event_id": "<Id of the event or 'unknown'>"
+}
+Only include information that is explicitly stated or clearly implied. Use "unknown"
+or empty list if unsure. Do NOT include any other fields or explanations.
+"""
+
 generate_missing_info_request_base = """
 [TASK] 
 1. Identify which required fields are missing.

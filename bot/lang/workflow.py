@@ -85,6 +85,7 @@ class Bot:
             "generate_confirmation_response_for_list": prompts.generate_confirmation_response_for_list,
             "generate_confirmation_response_for_other": prompts.generate_confirmation_response_for_other,
             "generate_confirmation_response_for_fail": prompts.generate_confirmation_response_for_fail,
+            "extract_action_event_id": prompts.extract_action_event_id
 
         }
         self.profiles = {
@@ -96,6 +97,7 @@ class Bot:
             "extract_action_input_for_list": ["default", "time_handling", "extract_action_list"],
             "extract_action_input_for_other": ["default", "time_handling", "extract_action_other"],
             "extract_action_input_for_new_info": ["default", "time_handling", "extract_action_new_info"],
+            "extract_action_event_id": ["default", "time_handling", "extract_action_event_id"],
             "generate_missing_info_request": ["default", "generate_missing_info_request_base", "time_handling", "tone_adjustment"],
             "generate_confirmation_response_for_list": ["default", "generate_confirmation_response_for_list", "time_handling", "tone_adjustment"],
             "generate_confirmation_response_for_other": ["default", "generate_confirmation_response_for_other", "time_handling", "tone_adjustment"],
@@ -116,7 +118,7 @@ class Bot:
         return False
 
     # LLM (OpenAI)
-    def completion(self, state, system_prompts: List[str] = None, profile: str = None, is_json: bool = False, **kwargs) -> str:
+    def completion(self, state, system_prompts: List[str] = None, profile: str = None, is_json: bool = False, add_info: dict = None, **kwargs) -> str:
         """Wrapper for OpenAI chat completions, with flexible system prompts."""
         messages = []
         if state["is_boss"]:
@@ -134,6 +136,9 @@ class Bot:
             system_prompt = self.prompts[prompt_name]
             if system_prompt:
                 messages.append({"role": "system", "content": system_prompt})
+        
+        if add_info: # additional info for event_id extraction
+            messages.append(add_info)
 
         # Add chat context (user/assistant messages from state)
         if profile == "identify_intent":
@@ -693,6 +698,16 @@ class Bot:
             if avail != "available" and avail != "same_event":
                 return result
 
+        if not event_id:
+            meetings_list = self.list_meetings(state, state["action_input"], include_past=False)
+            info = "[INFO] Meetings the user can update with their Ids:\n" + meetings_list["info"]
+            info_to_context = {"role": "assistant", "content": f"[INFO] {result.get('info', 'No details available')}"}
+            event_id_json = self.completion(state, profile="extract_action_event_id", is_json=True, add_info=info_to_context)
+            try:
+                event_id = event_id_json["event_id"]
+            except Exception as e:
+                print(f"Error encountered in JSON:{e}")
+            
         if event_id:
             try:
                 gresult = google_calendar.update_event(
@@ -713,9 +728,8 @@ class Bot:
                 success = False
                 info = f"Failed to update the meeting '{event_name}' in Google Calendar."
         else:
-            meetings_list = self.list_meetings(state, state["action_input"], include_past=False)
             success = False
-            info = "[INFO] (Update pending) Meetings the user can update:\n" + meetings_list["info"]
+            info = "Failed to find the meeting to update in Google Calendar"
         # Return the result
         result = {
             "success": success,
