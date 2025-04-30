@@ -189,12 +189,8 @@ class Bot:
             expected_fields = ["event_id", "start_time", "end_time"]
             profile = "extract_action_input_for_other"
         elif state["user_intent"] == "update":
-                expected_fields = []
-                profile = "extract_action_input_for_new_info" # Fix here
-            #else:
-            #    # in this case, extract action input for listing the possible events to update
-            #    expected_fields = ["event_id", "start_time", "end_time"]
-            #    profile = "extract_action_input_for_other"
+            expected_fields = ["event_id", "event_name", "start_time", "end_time", "description", "invited_people", "location"]
+            profile = "extract_action_input_for_new_info"
         else:
             return full_fields
         parsed = self.completion(state, profile=profile, is_json=True)
