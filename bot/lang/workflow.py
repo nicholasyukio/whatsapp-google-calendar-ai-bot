@@ -743,7 +743,7 @@ class Bot:
 
         # Build and run the graph
         graph = self.build_graph()
-        final_state = graph.invoke(self.state)current_context: List[ChatMessage] = []
+        final_state = graph.invoke(self.state)
         database.save_state(phone_number, final_state)
         
         return final_state["response"]
