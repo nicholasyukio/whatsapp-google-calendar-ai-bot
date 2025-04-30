@@ -336,7 +336,6 @@ class Bot:
             result = state["action_result"]
         if result["success"]:
             info_to_context = {"role": "assistant", "content": f"[INFO] Action {intent} was SUCCESSFUL, details: {result.get('info', 'No details available')}"}
-            state["user_intent"] = "none"
         else:
             info_to_context = {"role": "assistant", "content": f"[INFO] Action {intent} was NOT SUCCESSFUL, details: {result.get('info', 'No details available')}"}
         if intent in ["schedule", "list", "cancel", "update"] and chosen_action == "take_intent": # to avoid appending info to context about invalid intents and action of not taking intent
