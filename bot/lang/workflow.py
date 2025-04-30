@@ -30,7 +30,6 @@ class ActionInput(TypedDict, total=False):  # total=False makes all fields optio
     description: str
     invited_people: List[str]
     location: str
-    is_update: bool
 
 class ActionResult(TypedDict, total=False):
     success: bool
@@ -178,8 +177,7 @@ class Bot:
             "end_time": "",
             "description": "",
             "invited_people": [],
-            "location": "",
-            "is_update": False
+            "location": ""
         }
         if state["user_intent"] == "schedule":
             expected_fields = ["event_name", "start_time", "end_time", "description", "invited_people", "location"]
@@ -191,8 +189,6 @@ class Bot:
             expected_fields = ["event_id", "start_time", "end_time"]
             profile = "extract_action_input_for_other"
         elif state["user_intent"] == "update":
-            #if state["action_input"]["is_update"]:
-                # in this case, extract action input for new values to update
                 expected_fields = []
                 profile = "extract_action_input_for_new_info" # Fix here
             #else:
@@ -267,11 +263,8 @@ class Bot:
         try:
             if intent_json["intent"] in ["schedule", "list", "cancel", "update"]:
                 state["user_intent"] = intent_json["intent"]
-            elif state["action_input"]["is_update"]:
-                state["user_intent"] = "update"
         except Exception as e:
             print(f"Unexpected error with JSON: {e}")
-            intent = state["user_intent"]
         return state
 
     def n_choose_action(self, state):
@@ -341,7 +334,6 @@ class Bot:
         if result["success"]:
             info_to_context = {"role": "assistant", "content": f"[INFO] Action {intent} was SUCCESSFUL, details: {result.get('info', 'No details available')}"}
             state["user_intent"] = "none"
-            state["action_input"]["is_update"] = False
         else:
             info_to_context = {"role": "assistant", "content": f"[INFO] Action {intent} was NOT SUCCESSFUL, details: {result.get('info', 'No details available')}"}
         state["context"].append(info_to_context)
@@ -643,56 +635,36 @@ class Bot:
         description = action_input.get("description", "").strip()
         location = action_input.get("location", "").strip()
         attendees_emails = action_input.get("invited_people", [])
-        #is_update = action_input.get("is_update", False)
 
-        success = False
-        info = ""
+        # Build a dictionary of the fields to update only if they are not blank.
+        update_params = {}
+        if event_name:
+            update_params["title"] = event_name
+        if start_time:
+            update_params["start_time"] = start_time
+        if end_time:
+            update_params["end_time"] = end_time
+        if description:
+            update_params["description"] = description
+        if location:
+            update_params["location"] = location
+        if attendees_emails:
+            update_params["attendees_emails"] = attendees_emails
 
         if event_id:
-            if event_name:
+            try:
                 gresult = google_calendar.update_event(
-                event_id=event_id,
-                title=event_name
+                    event_id=event_id,
+                    **update_params  # Only the non-blank parameters will be passed
                 )
-            if start_time:
-                gresult = google_calendar.update_event(
-                event_id=event_id,
-                start_time=start_time
-                )
-            if end_time:
-                gresult = google_calendar.update_event(
-                event_id=event_id,
-                end_time=end_time
-                )
-            if description:
-                gresult = google_calendar.update_event(
-                event_id=event_id,
-                description=description
-                )
-            if location:
-                gresult = google_calendar.update_event(
-                event_id=event_id,
-                location=location
-                )
-            if attendees_emails:
-                gresult = google_calendar.update_event(
-                event_id=event_id,
-                attendees_emails=attendees_emails
-                )
-            self.state["action_input"]["is_update"] = False
-            success = (gresult["status"] == "confirmed")
-            if success:
+                success = (gresult["status"] == "confirmed")
                 info = f"""The meeting '{event_name}' has been updated successfully. 
                 New details: Start: {start_time}, End: {end_time}, 
                 Description: {description}, Location: {location},
                 Participants: {', '.join(attendees_emails)}"""
-            else:
+            except Exception as e:
+                success = False
                 info = f"Failed to update the meeting '{event_name}' in Google Calendar."
-            #else:
-            #    self.state["action_input"]["is_update"] = True
-            #    success = False
-            #    info = """[INFO] (Update pending) The event the user wants to update was identified, but the user needs to clearly confirm 
-            #    what they want to change"""
         else:
             meetings_list = self.list_meetings(state, state["action_input"], include_past=False)
             success = False
@@ -762,8 +734,7 @@ class Bot:
                     "end_time": "",
                     "description": "",
                     "invited_people": [],
-                    "location": "",
-                    "is_update": False
+                    "location": ""
                 },
                 "action_result": {
                     "success": False,
@@ -820,7 +791,6 @@ class Bot:
                     "description": "",
                     "invited_people": [],
                     "location": "",
-                    "is_update": False
                 },
                 "action_result": {
                     "success": False,
@@ -876,8 +846,7 @@ if __name__ == "__main__":
         end_time="",
         description="",
         invited_people=[],
-        location="",
-        is_update=False
+        location=""
     ),
     action_result=ActionResult(success=False, info=""),
     response="",
