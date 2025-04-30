@@ -80,6 +80,7 @@ class Bot:
             "extract_action_schedule": prompts.extract_action_schedule,
             "extract_action_list": prompts.extract_action_list,
             "extract_action_other": prompts.extract_action_other,
+            "extract_action_new_info": prompts.extract_action_new_info,
             "generate_missing_info_request_base": prompts.generate_missing_info_request_base,
             "generate_confirmation_response_for_list": prompts.generate_confirmation_response_for_list,
             "generate_confirmation_response_for_other": prompts.generate_confirmation_response_for_other,
@@ -742,9 +743,7 @@ class Bot:
 
         # Build and run the graph
         graph = self.build_graph()
-        final_state = graph.invoke(self.state)
-        
-        # Save the updated state to DynamoDB
+        final_state = graph.invoke(self.state)current_context: List[ChatMessage] = []
         database.save_state(phone_number, final_state)
         
         return final_state["response"]
@@ -752,11 +751,11 @@ class Bot:
     # Method to handle the conversation
     def run(self):
         
-        user_id = "teste"
+        user_id = "5512981586001"
         result = database.load_state(user_id)
+        current_context: List[ChatMessage] = []
 
         if not result:
-            current_context: List[ChatMessage] = []
             result = {
                 "input_msg": "",
                 "context": current_context,
