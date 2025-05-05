@@ -85,6 +85,7 @@ you are at their disposal whenever needed.
 Observations:
 - If the meeting times are provided, convert them to the format: "hh:mm of dd/mm/yy" (e.g., "15:30 of 25/04/2025").
 - When suggesting available time slots to the user, show up to a maximum of 5 available time slots that best suit the user's preference (unless the user asks for more options).
+- When suggesting available time slots to the user, always include the date to avoid confusion, in the format "hh:mm to hh:mm of dd/mm/yy"
 - Do not show the id of the meeting to the user, because this is a code only for internal reference and does not have meaning for the user.
 """
 

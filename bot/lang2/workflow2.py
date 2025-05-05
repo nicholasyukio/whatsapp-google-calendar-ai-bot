@@ -60,15 +60,14 @@ class Bot2():
             state["username"] = BOSS_NAME
         # Loads meetings scheduled for the user
         meetings = actions.list_meetings(email, is_boss)
-        messages.append({"role": "assistant", "content": meetings["info"]})
-        conversation += meetings["info"] # Putting existing meetings into conversation
+        meetings_str = meetings["info"]
         # Creates LLM instace
         llm = LLM()
         # Adds user input to messages and to conversation
         messages.append({"role": "user", "content": user_input})
         conversation += f"User: {user_input}\n"
         # Extracts new data
-        extracted_data = llm.extract_data(conversation)
+        extracted_data = llm.extract_data(conversation, meetings_str)
         # Updates username and email:
         if extracted_data["username"] != "":
             state["username"] = extracted_data["username"]
@@ -80,7 +79,7 @@ class Bot2():
             messages.append({"role": "assistant", "content": result["info"]})
             result_list.append(result)
         # Generates bot response and saves to messages and conversation
-        bot_output = llm.gen_response(messages, is_boss=True)
+        bot_output = llm.gen_response(messages, is_boss, meetings_str)
         messages.append({"role": "assistant", "content": bot_output})
         conversation += f"Secretary: {bot_output}\n"
         # Saving in database

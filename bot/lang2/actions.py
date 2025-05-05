@@ -71,7 +71,7 @@ def schedule_meeting(data: ScheduleData, email: str, username: str) -> ActionRes
                     f"Location: {location}. Google Meet link: {google_meet_link}"
         }
     else:
-        info_start = f"""FAIL:SCHEDULE: The meeting '{event_name}' scheduled from {start_time} to {end_time}. "
+        info_start = f"""FAIL:SCHEDULE: The meeting '{event_name}' could not be scheduled from {start_time} to {end_time}. "
                         Participants: {', '.join(invited_people)}. Event description: {description}, "
                         Location: {location}. Google Meet link: {google_meet_link}"""
         if avail == "time_reverted":
@@ -176,7 +176,7 @@ def update_meeting(data: UpdateData, email: str) -> ActionResult:
     new_end_time,
     new_description,
     new_location,
-    new_invited_people
+    attendees_emails
     )):
         print("All values are None or empty.")
         result = {
@@ -187,28 +187,28 @@ def update_meeting(data: UpdateData, email: str) -> ActionResult:
 
     if not new_start_time and not new_end_time:
         avail = "available"
-    if new_start_time and not new_end_time:
+    elif new_start_time and not new_end_time:
         avail = is_time_slot_available(new_start_time, end_time, event_id)
-    if not new_start_time and new_end_time:
+    elif not new_start_time and new_end_time:
         avail = is_time_slot_available(start_time, new_end_time, event_id)
-    if new_start_time and new_end_time:
+    else:
         avail = is_time_slot_available(new_start_time, new_end_time, event_id)
     
     info_start = f"FAIL:UPDATE: "
     info_end = ""
+    suggestions_rst = suggest_time_slots()
+    if suggestions_rst["success"]:
+        suggestions_rst_str = suggestions_rst["info"]
+    else:
+        suggestions_rst_str = "No time slots suggestions."
     if avail == "time_reverted":
         info_end = "Failure reason: start time cannot be later than end time"
     elif avail == "rest_time":
         info_end = "Failure reason: this time is blocked because it is in the boss' rest time"
-        suggestions_rst = suggest_time_slots()
-        if suggestions_rst["success"]:
-            suggestions_rst_str = suggestions_rst["info"]
-            info_end = f"{info_end}\n{suggestions_rst_str}"
+        info_end = f"{info_end}\n{suggestions_rst_str}"
     elif avail == "already_busy":
         info_end = "Failure reason: the time slot is already occupied"
-        if suggestions_rst["success"]:
-            suggestions_rst_str = suggestions_rst["info"]
-            info_end = f"{info_end}\n{suggestions_rst_str}"
+        info_end = f"{info_end}\n{suggestions_rst_str}"
     result = {
         "success": False,
         "info": f"{info_start}\n{info_end}"
@@ -227,14 +227,15 @@ def update_meeting(data: UpdateData, email: str) -> ActionResult:
                     location=new_location,
                     attendees_emails=attendees_emails
             )
-            success = (gresult["status"] == "confirmed")
-            info = f"""SUCCESS:UPDATE: The meeting '{event_name}' has been updated successfully. 
-            New details: Start: {start_time}, End: {end_time}, 
-            Description: {description}, Location: {location},
-            Participants: {', '.join(attendees_emails)}"""
+            success = gresult.get("status") == "confirmed"
+            info = f"""SUCCESS:UPDATE: The meeting {event_id} has been updated successfully. 
+            New details: Name: {new_event_name}, Start: {new_start_time}, End: {new_end_time}, 
+            Description: {new_description}, Location: {new_location},
+            Participants: {', '.join(attendees_emails) if attendees_emails else "Unchanged"}
+            (None values mean that the parameter was not changed)"""
         except Exception as e:
             success = False
-            info = f"FAIL:UPDATE: Failed to update the meeting '{event_name}' in Google Calendar."
+            info = f"FAIL:UPDATE: Failed to update the meeting '{event_name}' in Google Calendar. Error: {str(e)}"
     else:
         success = False
         info = "FAIL:UPDATE: Failed to find the meeting to update in Google Calendar"

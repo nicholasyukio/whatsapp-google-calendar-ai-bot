@@ -23,7 +23,7 @@ class LLM():
             }
         
     # LLM (OpenAI)        
-    def gen_response(self, messages: List, is_boss: bool):
+    def gen_response(self, messages: List, is_boss: bool, meetings_str: str = None):
         context = [{"role": "system", "content": prompts.def_prompt},
                    {"role": "system", "content": prompts.gen_response_base}
                   ]
@@ -31,6 +31,8 @@ class LLM():
             context.append({"role": "system", "content": prompts.user_boss})
         else:
             context.append({"role": "system", "content": prompts.user_other})
+        if meetings_str:
+            context.append({"role": "assistant", "content": meetings_str})
         context.extend(messages)
         response = self.client.chat.completions.create(
             model="gpt-4.1-mini",
@@ -39,8 +41,10 @@ class LLM():
         )
         return response.choices[0].message.content.strip()
         
-    def extract_data(self, conversation) -> dict:
+    def extract_data(self, conversation: str, meetings_str: str = None) -> dict:
         context = [{"role": "system", "content": prompts.extract_info_base}]
+        if meetings_str:
+            conversation += meetings_str
         context.append({"role": "user", "content": conversation})
         response = self.client.chat.completions.create(
             model="gpt-4.1-mini",
