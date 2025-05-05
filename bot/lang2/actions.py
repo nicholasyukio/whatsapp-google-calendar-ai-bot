@@ -66,12 +66,12 @@ def schedule_meeting(data: ScheduleData, email: str, username: str) -> ActionRes
         
         result = {
             "success": success,
-            "info": f"SUCCESS:SCHEDULE: The meeting '{event_name}' scheduled from {start_time} to {end_time}. "
+            "info": f"SUCCESS:SCHEDULE: The meeting '{event_name}' scheduled from {start_time} to {end_time} (ISO 8601 UTC-3 time format). "
                     f"Participants: {', '.join(invited_people)}. Event description: {description}, "
                     f"Location: {location}. Google Meet link: {google_meet_link}"
         }
     else:
-        info_start = f"""FAIL:SCHEDULE: The meeting '{event_name}' could not be scheduled from {start_time} to {end_time}. "
+        info_start = f"""FAIL:SCHEDULE: The meeting '{event_name}' could not be scheduled from {start_time} to {end_time} (ISO 8601 UTC-3 time format). "
                         Participants: {', '.join(invited_people)}. Event description: {description}, "
                         Location: {location}. Google Meet link: {google_meet_link}"""
         if avail == "time_reverted":
@@ -229,7 +229,7 @@ def update_meeting(data: UpdateData, email: str) -> ActionResult:
             )
             success = gresult.get("status") == "confirmed"
             info = f"""SUCCESS:UPDATE: The meeting {event_id} has been updated successfully. 
-            New details: Name: {new_event_name}, Start: {new_start_time}, End: {new_end_time}, 
+            New details: Name: {new_event_name}, Start: {new_start_time}, End: {new_end_time} (ISO 8601 UTC-3 time format), 
             Description: {new_description}, Location: {new_location},
             Participants: {', '.join(attendees_emails) if attendees_emails else "Unchanged"}
             (None values mean that the parameter was not changed)"""
@@ -342,7 +342,7 @@ def suggest_time_slots(start_time_str: str = None, end_time_str: str = None, slo
         blocked = is_time_blocked(current_time)
 
         if not overlapping and not blocked:
-            suggestions.append(f"{current_time.strftime('%Y-%m-%d %H:%M')} to {slot_end_time.strftime('%H:%M')}")
+            suggestions.append(f"{current_time.strftime('%d/%m/%Y %H:%M')} to {slot_end_time.strftime('%H:%M')}")
 
         current_time += timedelta(minutes=slot_duration_minutes)
 
@@ -351,7 +351,7 @@ def suggest_time_slots(start_time_str: str = None, end_time_str: str = None, slo
         info = "No available time slots found."
     else:
         success = True
-        info = "AVAILABLE TIME SLOT SUGGESTIONS:\n" + "\n".join(suggestions)
+        info = "AVAILABLE TIME SLOT SUGGESTIONS (format: dd/mm/yyyy hh:mm):\n" + "\n".join(suggestions)
 
     return {
         "success": success,
@@ -396,7 +396,7 @@ def list_meetings(email, is_boss, start_time_str: str = None, end_time_str: str 
                 meeting_details = f"#{k}: Id: {event_id}, Meeting: {summary}, Time: {start} to {end}, Participants: {participants}, Location: {location}, Description: {description}, Google Meet link: {google_meet_link}"
                 meetings_list.append(meeting_details)
                 k = k + 1
-        info = "MEETINGS OF THE USER: "+"\n".join(meetings_list)+"\n\n"
+        info = "MEETINGS OF THE USER (times in ISO 8601 format, timezone UTC-3): "+"\n".join(meetings_list)+"\n\n"
     result = {
         "success": success,
         "info": info
