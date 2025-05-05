@@ -40,9 +40,10 @@ def telegram_webhook(request):
             user_id = data["message"]["chat"]["id"]
             user_msg = data["message"].get("text", "")
             # Create and use your Bot instance
-            bot2 = Bot2()
-            response = bot2.process_webhook_message(user_id, user_msg)
-            send_message(user_id, response)
+            # Test
+            #bot2 = Bot2()
+            #response = bot2.process_webhook_message(user_id, user_msg)
+            send_message(user_id, user_msg)
     except Exception as e:
         print(f"Error processing webhook: {e}")
     return JsonResponse({"status": "ok"})
