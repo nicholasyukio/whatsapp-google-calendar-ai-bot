@@ -389,10 +389,11 @@ def list_meetings(email, is_boss, start_time_str: str = None, end_time_str: str 
             attendees = event.get('attendees', [])
             location = event.get('location', 'online')
             description = event.get('description', 'unknown')
+            google_meet_link = event.get('hangoutLink', '')
             attendees_email_list = [attendee.get('email', 'Unknown') for attendee in attendees]
             if email in attendees_email_list or is_boss:
                 participants = ", ".join(attendees_email_list)
-                meeting_details = f"#{k}: Id: {event_id}, Meeting: {summary}, Time: {start} to {end}, Participants: {participants}, Location: {location}, Description: {description}"
+                meeting_details = f"#{k}: Id: {event_id}, Meeting: {summary}, Time: {start} to {end}, Participants: {participants}, Location: {location}, Description: {description}, Google Meet link: {google_meet_link}"
                 meetings_list.append(meeting_details)
                 k = k + 1
         info = "MEETINGS OF THE USER: "+"\n".join(meetings_list)+"\n\n"
