@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 import os
 import datetime
-
+from deepgram import Deepgram
 from bot.whatsapp.whatsapp_api import *
 from bot.lang.workflow import Bot
 from bot.lang2.workflow2 import Bot2
@@ -27,9 +27,30 @@ WHATSAPP_VERIFY_TOKEN = os.getenv('WHATSAPP_VERIFY_TOKEN')
 
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 
+DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
+
+dg_client = Deepgram(DEEPGRAM_API_KEY)
+
 def send_message(chat_id, text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     requests.post(url, json={"chat_id": chat_id, "text": text})
+
+def download_voice(file_id):
+    # Get file path
+    file_path_resp = requests.get(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getFile?file_id={file_id}")
+    file_path = file_path_resp.json()["result"]["file_path"]
+
+    # Download the file
+    file_url = f"https://api.telegram.org/file/bot{TELEGRAM_TOKEN}/{file_path}"
+    response = requests.get(file_url)
+    return response.content
+
+def transcribe_ogg(audio_bytes):
+    response = dg_client.transcription.sync_prerecorded(
+        audio={"buffer": audio_bytes, "mimetype": "audio/ogg"},
+        options={"punctuate": True, "language": "pt"}  # Change language if needed
+    )
+    return response["results"]["channels"][0]["alternatives"][0]["transcript"]
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -37,14 +58,33 @@ def telegram_webhook(request):
     try:
         data = json.loads(request.body.decode("utf-8"))
         if "message" in data:
-            user_id = data["message"]["chat"]["id"]
+            # user_id = data["message"]["chat"]["id"]
+            # user_id_str = str(user_id)
+            # user_msg = data["message"].get("text", "")
+            # bot2 = Bot2()
+            # response = bot2.process_webhook_message(user_id_str, user_msg)
+            # send_message(user_id, response)
+            message = data["message"]
+            user_id = message["chat"]["id"]
             user_id_str = str(user_id)
-            user_msg = data["message"].get("text", "")
-            # Create and use your Bot instance
-            # Test
-            bot2 = Bot2()
-            response = bot2.process_webhook_message(user_id_str, user_msg)
-            send_message(user_id, response)
+
+            # If it's voice
+            if "voice" in message:
+                file_id = message["voice"]["file_id"]
+                audio_bytes = download_voice(file_id)
+                transcription = transcribe_ogg(audio_bytes)
+
+                # Pass transcribed text to your bot logic
+                bot2 = Bot2()
+                response = bot2.process_webhook_message(user_id_str, transcription)
+                send_message(user_id, response)
+
+            # Fallback to regular text
+            elif "text" in message:
+                user_msg = message["text"]
+                bot2 = Bot2()
+                response = bot2.process_webhook_message(user_id_str, user_msg)
+                send_message(user_id, response)
     except Exception as e:
         print(f"Error processing webhook: {e}")
     return JsonResponse({"status": "ok"})
