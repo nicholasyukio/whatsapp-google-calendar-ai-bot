@@ -108,6 +108,8 @@ def telegram_webhook(request):
             # response = bot2.process_webhook_message(user_id_str, user_msg)
             # send_message(user_id, response)
             message = data["message"]
+            user_info = data["message"]["from"]
+            username = user_info.get("first_name", "")
             user_id = message["chat"]["id"]
             user_id_str = str(user_id)
 
@@ -119,14 +121,14 @@ def telegram_webhook(request):
 
                 # Pass transcribed text to your bot logic
                 bot2 = Bot2()
-                response = bot2.process_webhook_message(user_id_str, transcription)
+                response = bot2.process_webhook_message(user_id_str, username, transcription)
                 send_message(user_id, response)
 
             # Fallback to regular text
             elif "text" in message:
                 user_msg = message["text"]
                 bot2 = Bot2()
-                response = bot2.process_webhook_message(user_id_str, user_msg)
+                response = bot2.process_webhook_message(user_id_str, username, user_msg)
                 send_message(user_id, response)
     except Exception as e:
         print(f"Error processing webhook: {e}")

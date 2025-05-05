@@ -31,7 +31,7 @@ class Bot2():
 
         return result
     
-    def process_webhook_message(self, user_id: str, user_input: str) -> str:
+    def process_webhook_message(self, user_id: str, username: str, user_input: str) -> str:
         # Loading from database, if it exists
         state = database.load_state_tg(user_id)
         new_needed = False
@@ -44,7 +44,7 @@ class Bot2():
         if new_needed:
             state: State = {
                 "user_id": user_id,
-                "username": "",
+                "username": username,
                 "email": "",
                 "conversation": "",
                 "messages": [],
@@ -67,7 +67,8 @@ class Bot2():
         # Extracts new data
         extracted_data = llm.extract_data(conversation)
         # Updates username and email:
-        state["username"] = extracted_data["username"]
+        if extracted_data["username"] != "":
+            state["username"] = extracted_data["username"]
         state["email"] = extracted_data["email"]
         # Results of each action
         result_list = []
