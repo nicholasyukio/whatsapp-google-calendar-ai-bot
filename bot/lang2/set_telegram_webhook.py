@@ -7,12 +7,14 @@ if is_local:
     load_dotenv()  # Load .env
 
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+
 print(TELEGRAM_TOKEN)
-WEBHOOK_URL = "https://1pn6fst5ei.execute-api.us-east-1.amazonaws.com/production/telegram/"  # Use HTTPS URL
+WEBHOOK_URL_DEV = "https://5f14-2804-7f0-90c0-f68b-9f19-a7b0-19de-4bb.ngrok-free.app/telegram/"
+WEBHOOK_URL_PROD = "https://1pn6fst5ei.execute-api.us-east-1.amazonaws.com/production/telegram/"  # Use HTTPS URL
 
 def set_webhook():
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/setWebhook"
-    response = requests.post(url, json={"url": WEBHOOK_URL})
+    response = requests.post(url, json={"url": WEBHOOK_URL_PROD})
     print("Response:", response.status_code, response.text)
     if response.status_code == 200:
         print("✅ Webhook set successfully!")
