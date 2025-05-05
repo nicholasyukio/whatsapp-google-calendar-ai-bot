@@ -77,8 +77,9 @@ def transcribe_audio_file(file_path: str) -> str:
     }
 
     params = {
-        "model": "nova-2",
-        "smart_format": "true"
+        "model": "nova-3",
+        "smart_format": "true",
+        "detect_language": "true"
     }
 
     try:
