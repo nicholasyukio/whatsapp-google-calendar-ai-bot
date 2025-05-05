@@ -7,7 +7,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 import os
 import datetime
-from deepgram import Deepgram
 from bot.whatsapp.whatsapp_api import *
 from bot.lang.workflow import Bot
 from bot.lang2.workflow2 import Bot2
@@ -29,28 +28,72 @@ TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 
-dg_client = Deepgram(DEEPGRAM_API_KEY)
-
 def send_message(chat_id, text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     requests.post(url, json={"chat_id": chat_id, "text": text})
 
-def download_voice(file_id):
-    # Get file path
-    file_path_resp = requests.get(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getFile?file_id={file_id}")
-    file_path = file_path_resp.json()["result"]["file_path"]
+def download_voice(file_id: str, dest_path: str = "/tmp/audio.ogg") -> str:
+    """
+    Downloads the voice file from Telegram and saves it locally.
 
-    # Download the file
-    file_url = f"https://api.telegram.org/file/bot{TELEGRAM_TOKEN}/{file_path}"
-    response = requests.get(file_url)
-    return response.content
+    Args:
+        file_id: The Telegram file_id of the voice message.
+        dest_path: Local path to save the audio file.
 
-def transcribe_ogg(audio_bytes):
-    response = dg_client.transcription.sync_prerecorded(
-        audio={"buffer": audio_bytes, "mimetype": "audio/ogg"},
-        options={"punctuate": True, "language": "pt"}  # Change language if needed
-    )
-    return response["results"]["channels"][0]["alternatives"][0]["transcript"]
+    Returns:
+        The local path to the downloaded file.
+    """
+    # Step 1: Get file path from Telegram API
+    file_info_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getFile?file_id={file_id}"
+    response = requests.get(file_info_url)
+    response.raise_for_status()
+    file_path = response.json()["result"]["file_path"]
+
+    # Step 2: Download the actual file
+    download_url = f"https://api.telegram.org/file/bot{TELEGRAM_TOKEN}/{file_path}"
+    audio_data = requests.get(download_url)
+    audio_data.raise_for_status()
+
+    # Step 3: Save to /tmp (or another path)
+    with open(dest_path, "wb") as f:
+        f.write(audio_data.content)
+
+    return dest_path
+
+def transcribe_audio_file(file_path: str) -> str:
+    """
+    Sends a local audio file to Deepgram for transcription.
+
+    Args:
+        file_path: Path to the OGG audio file (downloaded from Telegram).
+        deepgram_api_key: Your Deepgram API key.
+
+    Returns:
+        The transcribed text or an error message.
+    """
+    headers = {
+        "Authorization": f"Token {DEEPGRAM_API_KEY}",
+        "Content-Type": "audio/ogg"
+    }
+
+    params = {
+        "model": "nova-2",
+        "smart_format": "true"
+    }
+
+    try:
+        with open(file_path, "rb") as audio:
+            response = requests.post(
+                "https://api.deepgram.com/v1/listen",
+                headers=headers,
+                params=params,
+                data=audio
+            )
+        response.raise_for_status()
+        transcript = response.json()
+        return transcript["results"]["channels"][0]["alternatives"][0]["transcript"]
+    except Exception as e:
+        return f"Error during transcription: {e}"
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -71,8 +114,8 @@ def telegram_webhook(request):
             # If it's voice
             if "voice" in message:
                 file_id = message["voice"]["file_id"]
-                audio_bytes = download_voice(file_id)
-                transcription = transcribe_ogg(audio_bytes)
+                file_path = download_voice(file_id)
+                transcription = transcribe_audio_file(file_path)
 
                 # Pass transcribed text to your bot logic
                 bot2 = Bot2()
