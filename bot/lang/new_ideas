@@ -1,0 +1,16 @@
+Loading all the info from the user in the beginning, including their calendar events
+
+Selecting only the message within a short time range (24h)
+
+Nodes:
+
+1. Collect data (personal, meetings, intents) -> with multiple LLM calls (or maybe a single call)
+2. Based on intent, decide what to do (ask more info, take action)
+    2.1. Create meeting, possible results: ok, unsuccessful, incomplete info
+    2.2. Cancel meeting, possible results: ok, unsuccessful, incomplete info
+    2.3. List meetings, possible results: ok, unsuccessful, incomplete info
+    2.4. Update meeting, possible results: ok, unsuccessful, incomplete info
+3. Generate and send response based on results
+
+1 can go directly to 3 if collected data is unclear or missing
+(does not know name, email or intent)

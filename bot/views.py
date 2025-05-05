@@ -10,8 +10,7 @@ import datetime
 
 from bot.whatsapp.whatsapp_api import *
 from bot.lang.workflow import Bot
-from bot.lang.database import save_state, load_state, is_context_expired
-
+from bot.lang2.workflow2 import Bot2
 import bot.lang.database as database
 
 is_local = os.path.exists('.env')
@@ -25,6 +24,28 @@ logger = logging.getLogger(__name__)
 
 # WhatsApp webhook verification token
 WHATSAPP_VERIFY_TOKEN = os.getenv('WHATSAPP_VERIFY_TOKEN')
+
+TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
+
+def send_message(chat_id, text):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    requests.post(url, json={"chat_id": chat_id, "text": text})
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def telegram_webhook(request):
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+        if "message" in data:
+            user_id = data["message"]["chat"]["id"]
+            user_msg = data["message"].get("text", "")
+            # Create and use your Bot instance
+            bot2 = Bot2()
+            response = bot2.process_webhook_message(user_id, user_msg)
+            send_message(user_id, response)
+    except Exception as e:
+        print(f"Error processing webhook: {e}")
+    return JsonResponse({"status": "ok"})
 
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
