@@ -2,14 +2,12 @@ import os
 from openai import OpenAI
 import json
 from typing import List
+import bot.lang2.prompts2 as prompts
 is_local = os.path.exists('.env')
 
 if is_local:
-    import prompts2 as prompts
     from dotenv import load_dotenv
     load_dotenv()  # Load .env
-else:
-    import bot.lang2.prompts2 as prompts
 
 class LLM():
     def __init__(self):

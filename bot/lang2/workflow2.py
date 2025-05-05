@@ -1,19 +1,14 @@
 from datetime import datetime
 import os
+import bot.lang2.database as database
+from bot.lang2.mytypes import State, ExtractedData
+import bot.lang2.actions as actions
+from bot.lang2.llm import LLM
 is_local = os.path.exists('.env')
 
 if is_local:
-    import database
-    from mytypes import State, ExtractedData
-    import actions
-    from llm import LLM
     from dotenv import load_dotenv
     load_dotenv()  # Load .env
-else:
-    import bot.lang2.database as database
-    from bot.lang2.mytypes import State, ExtractedData
-    import bot.lang2.actions as actions
-    from bot.lang2.llm import LLM
 
 BOSS_NAME = os.getenv("BOSS_NAME")
 BOSS_ID = os.getenv("BOSS_ID")

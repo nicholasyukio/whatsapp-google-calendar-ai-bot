@@ -1,20 +1,15 @@
 from datetime import datetime, timedelta, time
 from zoneinfo import ZoneInfo
-
+from bot.lang2.mytypes import ActionResult, UpdateData, CancelData, ScheduleData
+import bot.lang2.google_calendar as google_calendar
+from bot.lang2.llm import LLM
 import os
 
 is_local = os.path.exists('.env')
 
 if is_local:
-    from mytypes import ActionResult, UpdateData, CancelData, ScheduleData
-    import google_calendar
-    from llm import LLM
     from dotenv import load_dotenv
     load_dotenv()  # Load .env
-else:
-    from bot.lang2.mytypes import ActionResult, UpdateData, CancelData, ScheduleData
-    import bot.lang2.google_calendar as google_calendar
-    from bot.lang2.llm import LLM
 
 BOSS_NAME = os.getenv("BOSS_NAME")
 
