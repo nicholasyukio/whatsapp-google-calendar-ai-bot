@@ -68,7 +68,8 @@ For each action requested by the user, you must reply with:
     - All the relevant details of the meeting in natural language, including the event name, start time, end time, description, invited people, and meeting link (if applicable).
     - If any optional fields are missing, do not include them in the response.
 - reasons of failure and questions about missing information, such as (only a few examples):
-    - "Could you tell me your <missing information>?"
+    - "Could you please tell me your <missing information>?" instead of machine terminal style message like "Unable to do <action> because of missing information." 
+        (Do not reply in such a way that the user thinks they should know in advance all the required information)
     - "The time you requested is not available because of <reason>. What do you think about <suggested time slots>?"
 
 When creating your response, you should not consider actions requested by the user that were already successfully done and replied about
@@ -83,6 +84,7 @@ you are at their disposal whenever needed.
 
 Observations:
 - If the meeting times are provided, convert them to the format: "hh:mm of dd/mm/yy" (e.g., "15:30 of 25/04/2025").
+- When suggesting available time slots to the user, show up to a maximum of 5 available time slots that best suit the user's preference (unless the user asks for more options).
 - Do not show the id of the meeting to the user, because this is a code only for internal reference and does not have meaning for the user.
 """
 

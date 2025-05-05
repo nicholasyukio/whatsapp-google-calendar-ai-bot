@@ -16,16 +16,16 @@ BOSS_ID_TG = os.getenv("BOSS_ID_TG")
 BOSS_EMAIL = os.getenv("BOSS_EMAIL")
 
 class Bot2():
-    def handle_intent(self, intent_data):
+    def handle_intent(self, intent_data, email, username):
         kind = intent_data.get("kind")
         data = intent_data.get("data", {})
         
         if kind == "schedule":
-            result = actions.schedule_meeting(data, BOSS_EMAIL, BOSS_NAME)
+            result = actions.schedule_meeting(data, email, username)
         elif kind == "cancel":
             result = actions.cancel_meeting(data)
         elif kind == "update":
-            result = actions.update_meeting(data, BOSS_EMAIL)
+            result = actions.update_meeting(data, email)
         else:
             result = actions.handle_unknown(data)
 
@@ -55,6 +55,9 @@ class Bot2():
         conversation = state["conversation"]
         email = state["email"]
         is_boss = (user_id == BOSS_ID_TG)
+        if is_boss:
+            state["email"] = BOSS_EMAIL
+            state["username"] = BOSS_NAME
         # Loads meetings scheduled for the user
         meetings = actions.list_meetings(email, is_boss)
         messages.append({"role": "assistant", "content": meetings["info"]})
@@ -73,7 +76,7 @@ class Bot2():
         # Results of each action
         result_list = []
         for intent in extracted_data.get("intents", []):
-            result = self.handle_intent(intent)
+            result = self.handle_intent(intent, state["email"], state["username"])
             messages.append({"role": "assistant", "content": result["info"]})
             result_list.append(result)
         # Generates bot response and saves to messages and conversation
@@ -111,7 +114,7 @@ class Bot2():
             print("Extracted data: ", extracted_data)
             result_list = []
             for intent in extracted_data.get("intents", []):
-                result = self.handle_intent(intent)
+                result = self.handle_intent(intent, state["email"], state["username"])
                 print("Result", result)
                 messages.append({"role": "assistant", "content": result["info"]})
                 result_list.append(result)

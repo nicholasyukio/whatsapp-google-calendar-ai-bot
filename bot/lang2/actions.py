@@ -37,6 +37,13 @@ def schedule_meeting(data: ScheduleData, email: str, username: str) -> ActionRes
 
     avail = is_time_slot_available(start_time, end_time)
 
+    if email == "":
+        result = {
+            "success": False,
+            "info": "FAIL:SCHEDULE: email address is needed to schedule a meeting"
+        }
+        return result
+
     if event_name == "unknown":
         event_name = f"{username} <> {BOSS_NAME}"
 
