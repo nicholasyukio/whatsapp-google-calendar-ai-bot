@@ -12,6 +12,7 @@ if is_local:
 
 BOSS_NAME = os.getenv("BOSS_NAME")
 BOSS_ID = os.getenv("BOSS_ID")
+BOSS_ID_TG = os.getenv("BOSS_ID_TG")
 BOSS_EMAIL = os.getenv("BOSS_EMAIL")
 
 class Bot2():
@@ -53,7 +54,7 @@ class Bot2():
         messages = state["messages"]
         conversation = state["conversation"]
         email = state["email"]
-        is_boss = (user_id == BOSS_ID)
+        is_boss = (user_id == BOSS_ID_TG)
         # Loads meetings scheduled for the user
         meetings = actions.list_meetings(email, is_boss)
         messages.append({"role": "assistant", "content": meetings["info"]})
