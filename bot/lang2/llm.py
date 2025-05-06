@@ -42,7 +42,8 @@ class LLM():
         return response.choices[0].message.content.strip()
         
     def extract_data(self, conversation: str, meetings_str: str = None) -> dict:
-        context = [{"role": "system", "content": prompts.extract_info_base}]
+        context = [{"role": "system", "content": prompts.extract_info_base},
+                   {"role": "system", "content": prompts.time_handle_for_extract}]
         if meetings_str:
             conversation += meetings_str
         context.append({"role": "user", "content": conversation})

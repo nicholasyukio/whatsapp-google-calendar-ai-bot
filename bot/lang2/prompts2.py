@@ -89,6 +89,15 @@ Observations:
 - Do not show the id of the meeting to the user, because this is a code only for internal reference and does not have meaning for the user.
 """
 
+time_handle_for_extract = f"""
+# Time
+The current date and time in ISO 8601 format is: {now} (timezone UTC-3).
+
+Use it to determine exact value of relative dates, like 'yesterday', 'today', 'tomorrow', 'next Monday' or 'next week'.
+
+Assume that date and times present in the conversation to be in dd/mm/yy hh:mm format.
+"""
+
 extract_info_base = """
 The conversation you see is between an user and a secretary. The secretary's job is to manage the
 Google Calendar meetings that the boss has with other people. The user is either a person interested in a
@@ -111,8 +120,6 @@ Read the conversation, extract information and return it in JSON format as shown
 The return should be only the information in JSON format with nothing else, and do not include information
 that is not explicitly present in the conversation. If you do not identify username, email or any intent, just
 return the JSON with empty strings for username and email and empty array for intents.
-
-The current date and time in ISO 8601 format is: {now} (timezone UTC-3).
 
 Important: in intents of kind update or cancel, the Id of the event (event_id) is the internal id code used
 only internally, which is a 26-characters string. This Id is not some listing number shown to the user in
