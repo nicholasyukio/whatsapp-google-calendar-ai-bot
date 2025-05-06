@@ -48,7 +48,7 @@ class LLM():
             conversation += meetings_str
         context.append({"role": "user", "content": conversation})
         response = self.client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4.1",
             messages=context,
             temperature=0.7
         )
