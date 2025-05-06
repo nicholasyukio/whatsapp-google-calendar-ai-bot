@@ -14,6 +14,7 @@ BOSS_NAME = os.getenv("BOSS_NAME")
 BOSS_ID = os.getenv("BOSS_ID")
 BOSS_ID_TG = os.getenv("BOSS_ID_TG")
 BOSS_EMAIL = os.getenv("BOSS_EMAIL")
+MAX_LENGTH_MESSAGES = 50
 
 class Bot2():
     def handle_intent(self, intent_data, email, username):
@@ -34,9 +35,11 @@ class Bot2():
     def process_webhook_message(self, user_id: str, username: str, user_input: str) -> str:
         # Loading from database, if it exists
         state = database.load_state_tg(user_id)
+        email = ""
         new_needed = False
         if state:
-            if database.is_context_expired(state["updated_at_utc"]):
+            email = state["email"]
+            if database.is_context_expired(state["updated_at_utc"]) or len(state["messages"]) > MAX_LENGTH_MESSAGES:
                 new_needed = True
         else:
             new_needed = True
@@ -45,7 +48,7 @@ class Bot2():
             state: State = {
                 "user_id": user_id,
                 "username": username,
-                "email": "",
+                "email": email,
                 "conversation": "",
                 "messages": [],
                 "updated_at_utc": datetime.utcnow().isoformat()
@@ -73,19 +76,24 @@ class Bot2():
             state["username"] = extracted_data["username"]
         state["email"] = extracted_data["email"]
         # Results of each action
-        result_list = []
-        for intent in extracted_data.get("intents", []):
+        intents = extracted_data.get("intents", [])
+        all_success = len(intents) > 0
+        for intent in intents:
             result = self.handle_intent(intent, state["email"], state["username"])
             messages.append({"role": "assistant", "content": result["info"]})
-            result_list.append(result)
+            all_success = all_success and result["success"]
         # Generates bot response and saves to messages and conversation
-        bot_output = llm.gen_response(messages, is_boss, meetings_str)
+        bot_output = llm.gen_response(messages, is_boss, meetings_str, email)
         messages.append({"role": "assistant", "content": bot_output})
         conversation += f"Secretary: {bot_output}\n"
         # Saving in database
         state["updated_at_utc"] = datetime.utcnow().isoformat()
-        state["conversation"] = conversation
-        state["messages"] = messages
+        if all_success:
+            state["conversation"] = ""
+            state["messages"] = []
+        else:
+            state["conversation"] = conversation
+            state["messages"] = messages
         database.save_state_tg(user_id, state)
         return bot_output
 
@@ -111,12 +119,10 @@ class Bot2():
             conversation += f"User: {user_input}\n"
             extracted_data = llm.extract_data(conversation)
             print("Extracted data: ", extracted_data)
-            result_list = []
             for intent in extracted_data.get("intents", []):
                 result = self.handle_intent(intent, state["email"], state["username"])
                 print("Result", result)
                 messages.append({"role": "assistant", "content": result["info"]})
-                result_list.append(result)
             bot_output = llm.gen_response(messages, is_boss=True)
             messages.append({"role": "assistant", "content": bot_output})
             conversation += f"Secretary: {bot_output}\n"

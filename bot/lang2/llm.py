@@ -23,7 +23,7 @@ class LLM():
             }
         
     # LLM (OpenAI)        
-    def gen_response(self, messages: List, is_boss: bool, meetings_str: str = None):
+    def gen_response(self, messages: List, is_boss: bool, meetings_str: str = None, email: str = None):
         context = [{"role": "system", "content": prompts.def_prompt},
                    {"role": "system", "content": prompts.gen_response_base}
                   ]
@@ -31,6 +31,8 @@ class LLM():
             context.append({"role": "system", "content": prompts.user_boss})
         else:
             context.append({"role": "system", "content": prompts.user_other})
+            if email and email != "":
+                context.append({"role": "assistant", "content": f"INFO: The user email address is: {email}"})
         if meetings_str:
             context.append({"role": "assistant", "content": meetings_str})
         context.extend(messages)
