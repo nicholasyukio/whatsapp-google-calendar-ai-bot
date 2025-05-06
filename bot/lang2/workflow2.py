@@ -88,6 +88,8 @@ class Bot2():
         conversation += f"Secretary: {bot_output}\n"
         # Saving in database
         state["updated_at_utc"] = datetime.utcnow().isoformat()
+        # Temporary to always save the conversation (later we can fix it)
+        all_success = False
         if all_success:
             state["conversation"] = ""
             state["messages"] = []
